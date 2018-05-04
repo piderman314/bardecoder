@@ -13,7 +13,7 @@ impl ToLuma {
     }
 }
 
-impl Grayscale<DynamicImage> for ToLuma {
+impl Grayscale<DynamicImage, GrayImage> for ToLuma {
     fn to_grayscale(&self, source: DynamicImage) -> GrayImage {
         source.to_luma()
     }
