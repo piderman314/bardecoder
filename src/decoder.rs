@@ -64,7 +64,7 @@ pub fn default_builder() -> DecoderBuilder<DynamicImage, GrayImage, GrayImage> {
     let mut db = DecoderBuilder::new();
 
     db.grayscale(Box::new(ToLuma::new()));
-    db.threshold(Box::new(BlockedMean::new()));
+    db.threshold(Box::new(BlockedMean::new(5)));
 
     db
 }
