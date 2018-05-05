@@ -2,7 +2,7 @@ use image::DynamicImage;
 use image::GrayImage;
 
 pub trait Grayscale<S, G> {
-    fn to_grayscale(&self, source: S) -> G;
+    fn to_grayscale(&self, source: &S) -> G;
 }
 
 pub struct ToLuma {}
@@ -14,7 +14,7 @@ impl ToLuma {
 }
 
 impl Grayscale<DynamicImage, GrayImage> for ToLuma {
-    fn to_grayscale(&self, source: DynamicImage) -> GrayImage {
+    fn to_grayscale(&self, source: &DynamicImage) -> GrayImage {
         source.to_luma()
     }
 }
