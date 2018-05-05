@@ -79,9 +79,9 @@ impl BlockedMean {
         let (block_width, block_height) = as_block_coords(width, height, self.block_size);
 
         for coords in block_map.keys() {
-            let x_start = max(0, coords.0 - block_stride);
+            let x_start = max(0, coords.0.saturating_sub(block_stride));
             let x_end = min(block_width, coords.0 + block_stride);
-            let y_start = max(0, coords.1 - block_stride);
+            let y_start = max(0, coords.1.saturating_sub(block_stride));
             let y_end = min(block_height, coords.1 + block_stride);
 
             let mut total = 0;
