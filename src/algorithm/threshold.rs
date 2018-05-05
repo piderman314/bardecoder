@@ -27,6 +27,20 @@ impl Threshold<GrayImage, GrayImage> for BlockedMean {
         let width = dimensions.0;
         let height = dimensions.1;
 
+        let block_map = self.as_block_map(&grayscale, width, height);
+        let block_mean_map = self.to_block_mean_map(block_map, width, height);
+
+        grayscale
+    }
+}
+
+impl BlockedMean {
+    fn as_block_map(
+        &self,
+        grayscale: &GrayImage,
+        width: u32,
+        height: u32,
+    ) -> HashMap<(u32, u32), Stats> {
         let mut block_map: HashMap<(u32, u32), Stats> =
             HashMap::with_capacity((width * height / self.block_size) as usize);
 
@@ -49,6 +63,15 @@ impl Threshold<GrayImage, GrayImage> for BlockedMean {
             stat.mean = stat.total as f64 / stat.count as f64;
         }
 
+        block_map
+    }
+
+    fn to_block_mean_map(
+        &self,
+        block_map: HashMap<(u32, u32), Stats>,
+        width: u32,
+        height: u32,
+    ) -> HashMap<(u32, u32), Stats> {
         let mut block_mean_map: HashMap<(u32, u32), Stats> =
             HashMap::with_capacity((width * height / self.block_size) as usize);
 
@@ -82,7 +105,7 @@ impl Threshold<GrayImage, GrayImage> for BlockedMean {
             );
         }
 
-        grayscale
+        block_mean_map
     }
 }
 
