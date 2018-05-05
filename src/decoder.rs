@@ -12,8 +12,9 @@ pub struct Decoder<S, G, T> {
 }
 
 impl<S, G, T> Decoder<S, G, T> {
-    pub fn decode(&self, source: S) -> G {
-        self.grayscale.to_grayscale(source)
+    pub fn decode(&self, source: S) -> T {
+        let grayscale = self.grayscale.to_grayscale(source);
+        self.threshold.to_threshold(grayscale)
     }
 }
 

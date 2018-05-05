@@ -30,7 +30,7 @@ impl Threshold<GrayImage, GrayImage> for BlockedMean {
         let block_map = self.as_block_map(&grayscale, width, height);
         let block_mean_map = self.to_block_mean_map(block_map, width, height);
 
-        grayscale
+        self.to_threshold(grayscale, block_mean_map)
     }
 }
 
@@ -106,6 +106,21 @@ impl BlockedMean {
         }
 
         block_mean_map
+    }
+
+    fn to_threshold(
+        &self,
+        mut grayscale: GrayImage,
+        block_mean_map: HashMap<(u32, u32), Stats>,
+    ) -> GrayImage {
+        for (x, y, p) in grayscale.enumerate_pixels_mut() {
+            let coords = as_block_coords(x, y, self.block_size);
+            let mean = block_mean_map.get(&coords).unwrap().mean;
+
+            p.data[0] = if p.data[0] as f64 > mean { 255 } else { 0 };
+        }
+
+        grayscale
     }
 }
 
