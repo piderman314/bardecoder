@@ -1,10 +1,10 @@
 use image::DynamicImage;
 use image::GrayImage;
 
-use super::BlockedMean;
-use super::Grayscale;
-use super::Threshold;
-use super::ToLuma;
+use algorithm::grayscale::Grayscale;
+use algorithm::grayscale::ToLuma;
+use algorithm::threshold::BlockedMean;
+use algorithm::threshold::Threshold;
 
 pub struct Decoder<S, G, T> {
     grayscale: Box<Grayscale<S, G>>,
