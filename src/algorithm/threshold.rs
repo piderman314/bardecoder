@@ -1,5 +1,6 @@
 use image::GrayImage;
 
+use std::cmp::{max, min};
 use std::collections::HashMap;
 
 pub trait Threshold<G, T> {
@@ -8,11 +9,15 @@ pub trait Threshold<G, T> {
 
 pub struct BlockedMean {
     block_size: u32,
+    block_mean_size: u32,
 }
 
 impl BlockedMean {
-    pub fn new(block_size: u32) -> BlockedMean {
-        BlockedMean { block_size }
+    pub fn new(block_size: u32, block_mean_size: u32) -> BlockedMean {
+        BlockedMean {
+            block_size,
+            block_mean_size,
+        }
     }
 }
 
@@ -42,6 +47,39 @@ impl Threshold<GrayImage, GrayImage> for BlockedMean {
 
         for stat in block_map.values_mut() {
             stat.mean = stat.total as f64 / stat.count as f64;
+        }
+
+        let mut block_mean_map: HashMap<(u32, u32), Stats> =
+            HashMap::with_capacity((width * height / self.block_size) as usize);
+
+        let block_stride = (self.block_mean_size - 1) / 2;
+        let (block_width, block_height) = as_block_coords(width, height, self.block_size);
+
+        for coords in block_map.keys() {
+            let x_start = max(0, coords.0 - block_stride);
+            let x_end = min(block_width, coords.0 + block_stride);
+            let y_start = max(0, coords.1 - block_stride);
+            let y_end = min(block_height, coords.1 + block_stride);
+
+            let mut total = 0;
+            let mut count = 0;
+
+            for x in x_start..x_end {
+                for y in y_start..y_end {
+                    let stats = block_map.get(&(x, y)).unwrap();
+                    total += stats.total;
+                    count += stats.count;
+                }
+            }
+
+            block_mean_map.insert(
+                (coords.0, coords.1),
+                Stats {
+                    total,
+                    count,
+                    mean: total as f64 / count as f64,
+                },
+            );
         }
 
         grayscale
