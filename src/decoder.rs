@@ -32,6 +32,7 @@ pub fn default_decoder() -> Decoder<DynamicImage, GrayImage, GrayImage> {
 /// Builder struct to create a Decoder
 ///
 /// Required elements are:
+///
 /// * Grayscale
 /// * Threshold
 pub struct DecoderBuilder<S, G, T> {
