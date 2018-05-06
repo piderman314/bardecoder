@@ -18,11 +18,12 @@ pub struct QRLocation {
     top_left: QRFinderPosition,
     top_right: QRFinderPosition,
     bottom_left: QRFinderPosition,
-    module_size: u32,
+    module_size: f64,
 }
 
 #[derive(Debug)]
 pub struct QRFinderPosition {
     pub x: u32,
     pub y: u32,
+    pub module_size: f64,
 }
