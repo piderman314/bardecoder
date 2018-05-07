@@ -1,5 +1,6 @@
 use super::*;
 
+use std::cmp::{max, min};
 use std::iter::repeat;
 use std::iter::Iterator;
 
@@ -42,8 +43,6 @@ impl Locate<GrayImage> for LineScan {
                         }
                     }
 
-                    println!("{}, {}, {} to vertical", finder_x, finder_y, module_size);
-
                     let vert = self.verify_vertical(threshold, finder_x, finder_y, module_size);
 
                     if vert.is_none() {
@@ -52,8 +51,6 @@ impl Locate<GrayImage> for LineScan {
 
                         continue 'pixels;
                     }
-
-                    println!("{}, {}, {} to horizontal", finder_x, finder_y, module_size);
 
                     let vert = vert.unwrap();
                     finder_x = vert.x;
@@ -74,8 +71,6 @@ impl Locate<GrayImage> for LineScan {
                     finder_y = vert.y;
                     module_size = vert.module_size;
 
-                    println!("{}, {}, {} to diagonal", finder_x, finder_y, module_size);
-
                     let vert = self.verify_diagonal(threshold, finder_x, finder_y, module_size);
 
                     if vert.is_none() {
@@ -89,8 +84,6 @@ impl Locate<GrayImage> for LineScan {
                     finder_x = vert.x - (3.5 * vert.module_size) as u32;
                     finder_y = vert.y - (3.5 * vert.module_size) as u32;
                     module_size = vert.module_size;
-
-                    println!("{}, {}, {} to final", finder_x, finder_y, module_size);
 
                     candidates.push(QRFinderPosition {
                         x: finder_x,
@@ -118,8 +111,8 @@ impl LineScan {
         finder_y: u32,
         module_size: f64,
     ) -> Option<QRFinderPosition> {
-        let range_x =
-            finder_x.saturating_sub(5 * module_size as u32)..finder_x + 5 * module_size as u32;
+        let range_x = finder_x.saturating_sub(7 * module_size as u32)
+            ..min(finder_x + 7 * module_size as u32, threshold.dimensions().0);
         let range_y = repeat(finder_y);
 
         self.verify(threshold, finder_x, finder_y, module_size, range_x, range_y)
@@ -133,8 +126,8 @@ impl LineScan {
         module_size: f64,
     ) -> Option<QRFinderPosition> {
         let range_x = repeat(finder_x);
-        let range_y =
-            finder_y.saturating_sub(5 * module_size as u32)..finder_y + 5 * module_size as u32;
+        let range_y = finder_y.saturating_sub(7 * module_size as u32)
+            ..min(finder_y + 7 * module_size as u32, threshold.dimensions().1);
 
         self.verify(threshold, finder_x, finder_y, module_size, range_x, range_y)
     }
@@ -146,10 +139,26 @@ impl LineScan {
         finder_y: u32,
         module_size: f64,
     ) -> Option<QRFinderPosition> {
-        let range_x =
-            finder_x.saturating_sub(5 * module_size as u32)..finder_x + 5 * module_size as u32;
-        let range_y =
-            finder_y.saturating_sub(5 * module_size as u32)..finder_y + 5 * module_size as u32;
+        let side = 7 * module_size as u32;
+        let mut start_x = 0;
+        let mut start_y = 0;
+        if finder_x < side && finder_y < side {
+            if finder_x < finder_y {
+                start_y = finder_y - finder_x;
+            } else {
+                start_x = finder_x - finder_y;
+            }
+        } else if finder_x < side {
+            start_y = finder_y - finder_x;
+        } else if finder_y < side {
+            start_x = finder_x - finder_y;
+        } else {
+            start_x = finder_x.saturating_sub(side);
+            start_y = finder_y.saturating_sub(side);
+        }
+
+        let range_x = start_x..min(finder_x + 7 * module_size as u32, threshold.dimensions().0);
+        let range_y = start_y..min(finder_y + 7 * module_size as u32, threshold.dimensions().1);
 
         self.verify(threshold, finder_x, finder_y, module_size, range_x, range_y)
     }
@@ -165,33 +174,50 @@ impl LineScan {
     ) -> Option<QRFinderPosition> {
         let dims = threshold.dimensions();
 
-        if finder_x < 7 * module_size as u32 || finder_y < 7 * module_size as u32 {
+        if finder_x < module_size as u32 || finder_y < module_size as u32 {
             return None;
         }
 
-        if dims.0 - finder_x < 7 * module_size as u32 || dims.1 - finder_y < 7 * module_size as u32
-        {
+        if dims.0 - finder_x < module_size as u32 || dims.1 - finder_y < module_size as u32 {
             return None;
         }
 
         let mut last_pixel = 127;
         let mut pattern = QRFinderPattern::new();
+        let mut last_x = 0;
+        let mut last_y = 0;
         for (x, y) in range_x.zip(range_y) {
             let p = threshold.get_pixel(x, y)[0];
             if p == last_pixel {
                 pattern.4 += 1;
             } else {
-                if pattern.looks_like_finder() && diff(module_size, pattern.est_mod_size()) < 0.05 {
-                    let new_est_mod_size = (module_size + pattern.est_mod_size()) / 2.0;
-                    return Some(QRFinderPosition {
-                        x: x,
-                        y: y,
-                        module_size: new_est_mod_size,
-                    });
+                if pattern.looks_like_finder() {
+                    if diff(module_size, pattern.est_mod_size()) < 0.2 {
+                        let new_est_mod_size = (module_size + pattern.est_mod_size()) / 2.0;
+                        return Some(QRFinderPosition {
+                            x: x,
+                            y: y,
+                            module_size: new_est_mod_size,
+                        });
+                    }
                 }
 
                 last_pixel = p;
                 pattern.slide();
+            }
+
+            last_x = x;
+            last_y = y;
+        }
+
+        if pattern.looks_like_finder() {
+            if diff(module_size, pattern.est_mod_size()) < 0.2 {
+                let new_est_mod_size = (module_size + pattern.est_mod_size()) / 2.0;
+                return Some(QRFinderPosition {
+                    x: last_x,
+                    y: last_y,
+                    module_size: new_est_mod_size,
+                });
             }
         }
 
@@ -199,6 +225,7 @@ impl LineScan {
     }
 }
 
+#[derive(Debug)]
 struct QRFinderPattern(u32, u32, u32, u32, u32);
 
 impl QRFinderPattern {
@@ -225,26 +252,26 @@ impl QRFinderPattern {
             return false;
         }
 
-        let module_size: i64 = total_size / 7;
-        let max_variance = module_size as f64 / 2.0;
+        let module_size: f64 = total_size as f64 / 7.0;
+        let max_variance = module_size as f64 / 1.5;
 
-        if (module_size - self.0 as i64).abs() as f64 > max_variance {
+        if (module_size - self.0 as f64).abs() > max_variance {
             return false;
         }
 
-        if (module_size - self.1 as i64).abs() as f64 > max_variance {
+        if (module_size - self.1 as f64).abs() > max_variance {
             return false;
         }
 
-        if (module_size * 3 - self.2 as i64).abs() as f64 > max_variance {
+        if (module_size * 3.0 - self.2 as f64).abs() > max_variance {
             return false;
         }
 
-        if (module_size - self.3 as i64).abs() as f64 > max_variance {
+        if (module_size - self.3 as f64).abs() > max_variance {
             return false;
         }
 
-        if (module_size - self.4 as i64).abs() as f64 > max_variance {
+        if (module_size - self.4 as f64).abs() > max_variance {
             return false;
         }
 
@@ -263,7 +290,18 @@ fn diff(a: f64, b: f64) -> f64 {
 
 #[inline]
 fn dist(x1: u32, y1: u32, x2: u32, y2: u32) -> f64 {
-    let dist = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+    let mut dist = 0;
+    if x1 > x2 {
+        dist += (x1 - x2) * (x1 - x2);
+    } else if x1 <= x2 {
+        dist += (x2 - x1) * (x2 - x1);
+    }
+
+    if y1 > y2 {
+        dist += (y1 - y2) * (y1 - y2);
+    } else if y1 <= y2 {
+        dist += (y2 - y1) * (y2 - y1);
+    }
 
     (dist as f64).sqrt()
 }
