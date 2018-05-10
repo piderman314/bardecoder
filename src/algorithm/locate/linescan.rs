@@ -48,7 +48,7 @@ impl Locate<GrayImage> for LineScan {
             let mut module_size = pattern.est_mod_size();
 
             let mut finder = Point {
-                x: x as f64 - (pattern.0 + pattern.1 + pattern.2) as f64 / 2.0,
+                x: x as f64 - module_size * 3.5,
                 y: y as f64,
             };
 
@@ -93,13 +93,19 @@ impl Locate<GrayImage> for LineScan {
 
         for candidate1 in 0..max_candidates {
             for candidate2 in candidate1 + 1..max_candidates {
-                if candidates[candidate1].module_size - candidates[candidate2].module_size > 0.05 {
+                if diff(
+                    candidates[candidate1].module_size,
+                    candidates[candidate2].module_size,
+                ) > 0.05
+                {
                     continue;
                 }
 
                 for candidate3 in candidate2 + 1..max_candidates {
-                    if candidates[candidate1].module_size - candidates[candidate3].module_size
-                        > 0.05
+                    if diff(
+                        candidates[candidate1].module_size,
+                        candidates[candidate3].module_size,
+                    ) > 0.05
                     {
                         continue;
                     }
@@ -127,9 +133,9 @@ impl LineScan {
         finder: &Point,
         module_size: f64,
     ) -> Option<QRFinderPosition> {
-        let start_x = max(0, (finder.x - 7.0 * module_size).round() as u32);
+        let start_x = max(0, (finder.x - 5.0 * module_size).round() as u32);
         let end_x = min(
-            (finder.x + 7.0 * module_size).round() as u32,
+            (finder.x + 5.0 * module_size).round() as u32,
             threshold.dimensions().0,
         );
 
@@ -145,9 +151,9 @@ impl LineScan {
         finder: &Point,
         module_size: f64,
     ) -> Option<QRFinderPosition> {
-        let start_y = max(0, (finder.y - 7.0 * module_size).round() as u32);
+        let start_y = max(0, (finder.y - 5.0 * module_size).round() as u32);
         let end_y = min(
-            (finder.y + 7.0 * module_size).round() as u32,
+            (finder.y + 5.0 * module_size).round() as u32,
             threshold.dimensions().1,
         );
 
@@ -163,7 +169,7 @@ impl LineScan {
         finder: &Point,
         module_size: f64,
     ) -> Option<QRFinderPosition> {
-        let side = 7.0 * module_size;
+        let side = 5.0 * module_size;
         let mut start_x = 0.0;
         let mut start_y = 0.0;
         if finder.x < side && finder.y < side {
@@ -183,12 +189,12 @@ impl LineScan {
 
         let range_x = start_x.round() as u32
             ..min(
-                (finder.x + 7.0 * module_size).round() as u32,
+                (finder.x + 5.0 * module_size).round() as u32,
                 threshold.dimensions().0,
             );
         let range_y = start_y.round() as u32
             ..min(
-                (finder.y + 7.0 * module_size).round() as u32,
+                (finder.y + 5.0 * module_size).round() as u32,
                 threshold.dimensions().1,
             );
 
@@ -348,6 +354,8 @@ fn find_qr_internal(
     let len_b = (bx * bx + by * by).sqrt();
 
     let perpendicular = cross_product / len_a / len_b;
+
+    println!("PERPENDICULAR {}", perpendicular);
 
     if (perpendicular.abs() - 1.0).abs() > 0.01 {
         return None;
