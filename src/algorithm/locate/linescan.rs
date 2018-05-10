@@ -1,6 +1,6 @@
 use super::*;
 
-use std::cmp::{max, min};
+use std::cmp::min;
 use std::iter::repeat;
 use std::iter::Iterator;
 
@@ -12,8 +12,18 @@ impl LineScan {
     }
 }
 
+type Refine = Fn(&LineScan, &GrayImage, u32, u32, f64) -> Option<QRFinderPosition>;
+
 impl Locate<GrayImage> for LineScan {
     fn locate(&self, threshold: &GrayImage) -> Vec<QRFinderPosition> {
+        // The order of refinement is important.
+        // The candidate is found in horizontal direction, so the first refinement is vertical
+        let refine_func: Vec<(Box<Refine>, u32, u32)> = vec![
+            (Box::new(LineScan::refine_vertical), 0, 1),
+            (Box::new(LineScan::refine_horizontal), 1, 0),
+            (Box::new(LineScan::refine_diagonal), 1, 1),
+        ];
+
         //let locations = vec![];
         let mut candidates: Vec<QRFinderPosition> = vec![];
 
@@ -43,47 +53,22 @@ impl Locate<GrayImage> for LineScan {
                         }
                     }
 
-                    let vert = self.verify_vertical(threshold, finder_x, finder_y, module_size);
+                    for (refine_func, dx, dy) in refine_func.iter() {
+                        let vert = refine_func(&self, threshold, finder_x, finder_y, module_size);
 
-                    if vert.is_none() {
-                        last_pixel = p.data[0];
-                        pattern.slide();
+                        if vert.is_none() {
+                            last_pixel = p.data[0];
+                            pattern.slide();
 
-                        continue 'pixels;
+                            continue 'pixels;
+                        }
+
+                        let vert = vert.unwrap();
+                        let half_finder = (3.5 * vert.module_size) as u32;
+                        finder_x = vert.x - dx * half_finder;
+                        finder_y = vert.y - dy * half_finder;
+                        module_size = vert.module_size;
                     }
-
-                    let vert = vert.unwrap();
-                    finder_x = vert.x;
-                    finder_y = vert.y - (3.5 * vert.module_size) as u32;
-                    module_size = vert.module_size;
-
-                    let vert = self.verify_horizontal(threshold, finder_x, finder_y, module_size);
-
-                    if vert.is_none() {
-                        last_pixel = p.data[0];
-                        pattern.slide();
-
-                        continue 'pixels;
-                    }
-
-                    let vert = vert.unwrap();
-                    finder_x = vert.x - (3.5 * vert.module_size) as u32;
-                    finder_y = vert.y;
-                    module_size = vert.module_size;
-
-                    let vert = self.verify_diagonal(threshold, finder_x, finder_y, module_size);
-
-                    if vert.is_none() {
-                        last_pixel = p.data[0];
-                        pattern.slide();
-
-                        continue 'pixels;
-                    }
-
-                    let vert = vert.unwrap();
-                    finder_x = vert.x - (3.5 * vert.module_size) as u32;
-                    finder_y = vert.y - (3.5 * vert.module_size) as u32;
-                    module_size = vert.module_size;
 
                     candidates.push(QRFinderPosition {
                         x: finder_x,
@@ -104,7 +89,7 @@ impl Locate<GrayImage> for LineScan {
 }
 
 impl LineScan {
-    fn verify_horizontal(
+    fn refine_horizontal(
         &self,
         threshold: &GrayImage,
         finder_x: u32,
@@ -115,10 +100,10 @@ impl LineScan {
             ..min(finder_x + 7 * module_size as u32, threshold.dimensions().0);
         let range_y = repeat(finder_y);
 
-        self.verify(threshold, finder_x, finder_y, module_size, range_x, range_y)
+        self.refine(threshold, finder_x, finder_y, module_size, range_x, range_y)
     }
 
-    fn verify_vertical(
+    fn refine_vertical(
         &self,
         threshold: &GrayImage,
         finder_x: u32,
@@ -129,10 +114,10 @@ impl LineScan {
         let range_y = finder_y.saturating_sub(7 * module_size as u32)
             ..min(finder_y + 7 * module_size as u32, threshold.dimensions().1);
 
-        self.verify(threshold, finder_x, finder_y, module_size, range_x, range_y)
+        self.refine(threshold, finder_x, finder_y, module_size, range_x, range_y)
     }
 
-    fn verify_diagonal(
+    fn refine_diagonal(
         &self,
         threshold: &GrayImage,
         finder_x: u32,
@@ -160,10 +145,10 @@ impl LineScan {
         let range_x = start_x..min(finder_x + 7 * module_size as u32, threshold.dimensions().0);
         let range_y = start_y..min(finder_y + 7 * module_size as u32, threshold.dimensions().1);
 
-        self.verify(threshold, finder_x, finder_y, module_size, range_x, range_y)
+        self.refine(threshold, finder_x, finder_y, module_size, range_x, range_y)
     }
 
-    fn verify(
+    fn refine(
         &self,
         threshold: &GrayImage,
         finder_x: u32,
