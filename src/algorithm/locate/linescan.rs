@@ -353,11 +353,13 @@ fn find_qr_internal(
     let len_a = (ax * ax + ay * ay).sqrt();
     let len_b = (bx * bx + by * by).sqrt();
 
+    if diff(len_a, len_b) > 0.05 {
+        return None;
+    }
+
     let perpendicular = cross_product / len_a / len_b;
 
-    println!("PERPENDICULAR {}", perpendicular);
-
-    if (perpendicular.abs() - 1.0).abs() > 0.01 {
+    if (perpendicular.abs() - 1.0).abs() > 0.05 {
         return None;
     }
 
