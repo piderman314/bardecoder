@@ -15,7 +15,7 @@ impl LineScan {
 type Refine = Fn(&LineScan, &GrayImage, u32, u32, f64) -> Option<QRFinderPosition>;
 
 impl Locate<GrayImage> for LineScan {
-    fn locate(&self, threshold: &GrayImage) -> Vec<QRFinderPosition> {
+    fn locate(&self, threshold: &GrayImage) -> Vec<QRLocation> {
         // The order of refinement is important.
         // The candidate is found in horizontal direction, so the first refinement is vertical
         let refine_func: Vec<(Box<Refine>, u32, u32)> = vec![
@@ -24,7 +24,6 @@ impl Locate<GrayImage> for LineScan {
             (Box::new(LineScan::refine_diagonal), 1, 1),
         ];
 
-        //let locations = vec![];
         let mut candidates: Vec<QRFinderPosition> = vec![];
 
         let mut last_pixel = 127;
@@ -87,10 +86,146 @@ impl Locate<GrayImage> for LineScan {
             pattern.slide();
         }
 
-        candidates
+        let mut locations: Vec<QRLocation> = vec![];
 
-        //locations
+        let mut loc_candidates: Vec<LocationCandidate> = vec![];
+
+        'candidates: for candidate in candidates {
+            for loc_candidate in loc_candidates.iter_mut() {
+                if diff(candidate.module_size, loc_candidate.module_size) < 0.05 {
+                    if loc_candidate.positions.len() == 1 {
+                        let candidate_pos = loc_candidate.positions[0];
+
+                        let dist =
+                            ((dist(candidate.x, candidate.y, candidate_pos.0, candidate_pos.1)
+                                / candidate.module_size) + 7.0) as u32;
+
+                        if dist >= 21 && dist % 4 == 1
+                            && !is_diagonal((candidate.x, candidate.y), candidate_pos)
+                        {
+                            loc_candidate.positions.push((candidate.x, candidate.y));
+                            loc_candidate.version = (dist - 1) / 4;
+
+                            continue 'candidates;
+                        }
+                    } else if loc_candidate.positions.len() == 2 && loc_candidate.version != 0 {
+                        let mut add = false;
+                        for candidate_pos in loc_candidate.positions.iter() {
+                            let dist =
+                                ((dist(candidate.x, candidate.y, candidate_pos.0, candidate_pos.1)
+                                    / candidate.module_size) + 7.0)
+                                    as u32;
+
+                            let version = (dist - 1) / 4;
+                            if version == loc_candidate.version
+                                && !is_diagonal((candidate.x, candidate.y), *candidate_pos)
+                            {
+                                add = true;
+                            }
+                        }
+
+                        if add {
+                            loc_candidate.positions.push((candidate.x, candidate.y));
+
+                            continue 'candidates;
+                        }
+                    }
+                }
+            }
+
+            loc_candidates.push(LocationCandidate {
+                positions: vec![(candidate.x, candidate.y)],
+                module_size: candidate.module_size,
+                version: 0,
+            });
+        }
+
+        for loc_candidate in loc_candidates {
+            if loc_candidate.positions.len() == 3 {
+                let pos = &loc_candidate.positions;
+
+                if is_diagonal(pos[0], pos[1]) {
+                    let ax: i64 = pos[2].0 as i64 - pos[0].0 as i64;
+                    let ay: i64 = pos[2].1 as i64 - pos[0].1 as i64;
+                    let bx: i64 = pos[2].0 as i64 - pos[1].0 as i64;
+                    let by: i64 = pos[2].1 as i64 - pos[1].1 as i64;
+
+                    if ax * by - ay * bx > 0 {
+                        locations.push(QRLocation {
+                            top_left: pos[2],
+                            top_right: pos[1],
+                            bottom_left: pos[0],
+                            module_size: loc_candidate.module_size,
+                            version: loc_candidate.version,
+                        });
+                    } else {
+                        locations.push(QRLocation {
+                            top_left: pos[2],
+                            top_right: pos[0],
+                            bottom_left: pos[1],
+                            module_size: loc_candidate.module_size,
+                            version: loc_candidate.version,
+                        });
+                    }
+                } else if is_diagonal(pos[0], pos[2]) {
+                    let ax: i64 = pos[1].0 as i64 - pos[0].0 as i64;
+                    let ay: i64 = pos[1].1 as i64 - pos[0].1 as i64;
+                    let bx: i64 = pos[1].0 as i64 - pos[2].0 as i64;
+                    let by: i64 = pos[1].1 as i64 - pos[2].1 as i64;
+
+                    if ax * by - ay * bx > 0 {
+                        locations.push(QRLocation {
+                            top_left: pos[1],
+                            top_right: pos[2],
+                            bottom_left: pos[0],
+                            module_size: loc_candidate.module_size,
+                            version: loc_candidate.version,
+                        });
+                    } else {
+                        locations.push(QRLocation {
+                            top_left: pos[1],
+                            top_right: pos[0],
+                            bottom_left: pos[2],
+                            module_size: loc_candidate.module_size,
+                            version: loc_candidate.version,
+                        });
+                    }
+                } else {
+                    let ax: i64 = pos[0].0 as i64 - pos[2].0 as i64;
+                    let ay: i64 = pos[0].1 as i64 - pos[2].1 as i64;
+                    let bx: i64 = pos[0].0 as i64 - pos[1].0 as i64;
+                    let by: i64 = pos[0].1 as i64 - pos[1].1 as i64;
+
+                    if ax * by - ay * bx > 0 {
+                        locations.push(QRLocation {
+                            top_left: pos[0],
+                            top_right: pos[1],
+                            bottom_left: pos[2],
+                            module_size: loc_candidate.module_size,
+                            version: loc_candidate.version,
+                        });
+                    } else {
+                        locations.push(QRLocation {
+                            top_left: pos[0],
+                            top_right: pos[2],
+                            bottom_left: pos[1],
+                            module_size: loc_candidate.module_size,
+                            version: loc_candidate.version,
+                        });
+                    }
+                }
+            }
+        }
+
+        locations
     }
+}
+
+#[derive(Debug)]
+struct LocationCandidate {
+    positions: Vec<(u32, u32)>,
+    module_size: f64,
+    version: u32,
 }
 
 impl LineScan {
@@ -294,4 +429,24 @@ fn dist(x1: u32, y1: u32, x2: u32, y2: u32) -> f64 {
     }
 
     (dist as f64).sqrt()
+}
+
+#[inline]
+fn is_diagonal(one: (u32, u32), other: (u32, u32)) -> bool {
+    let dx = if one.0 > other.0 {
+        one.0 - other.0
+    } else {
+        other.0 - one.0
+    };
+    let dy = if one.1 > other.1 {
+        one.1 - other.1
+    } else {
+        other.1 - one.1
+    };
+
+    if dx > dy {
+        dx / 2 < dy
+    } else {
+        dy / 2 < dx
+    }
 }

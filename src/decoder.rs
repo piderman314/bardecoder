@@ -5,7 +5,7 @@ use algorithm::grayscale::Grayscale;
 use algorithm::grayscale::ToLuma;
 use algorithm::locate::LineScan;
 use algorithm::locate::Locate;
-use algorithm::locate::QRFinderPosition;
+use algorithm::locate::QRLocation;
 use algorithm::threshold::BlockedMean;
 use algorithm::threshold::Threshold;
 
@@ -16,7 +16,7 @@ pub struct Decoder<S, G, T> {
 }
 
 impl<S, G, T> Decoder<S, G, T> {
-    pub fn decode(&self, source: &S) -> Vec<QRFinderPosition> {
+    pub fn decode(&self, source: &S) -> Vec<QRLocation> {
         let grayscale = self.grayscale.to_grayscale(source);
         let threshold = self.threshold.to_threshold(grayscale);
         self.locate.locate(&threshold)

@@ -1,7 +1,7 @@
 use image::GrayImage;
 
 pub trait Locate<T> {
-    fn locate(&self, threshold: &T) -> Vec<QRFinderPosition>;
+    fn locate(&self, threshold: &T) -> Vec<QRLocation>;
 }
 
 mod linescan;
@@ -15,15 +15,16 @@ pub enum Location {
 
 #[derive(Debug)]
 pub struct QRLocation {
-    top_left: QRFinderPosition,
-    top_right: QRFinderPosition,
-    bottom_left: QRFinderPosition,
-    module_size: f64,
+    pub top_left: (u32, u32),
+    pub top_right: (u32, u32),
+    pub bottom_left: (u32, u32),
+    pub module_size: f64,
+    pub version: u32,
 }
 
 #[derive(Debug)]
 pub struct QRFinderPosition {
     pub x: u32,
     pub y: u32,
-    pub module_size: f64,
+    module_size: f64,
 }
