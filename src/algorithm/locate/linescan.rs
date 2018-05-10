@@ -89,129 +89,30 @@ impl Locate<GrayImage> for LineScan {
 
         let mut locations: Vec<QRLocation> = vec![];
 
-        let mut loc_candidates: Vec<LocationCandidate> = vec![];
+        let max_candidates = candidates.len();
 
-        'candidates: for candidate in candidates {
-            for loc_candidate in loc_candidates.iter_mut() {
-                if diff(candidate.module_size, loc_candidate.module_size) < 0.05 {
-                    if loc_candidate.positions.len() == 1 {
-                        let candidate_pos = loc_candidate.positions[0];
+        println!("{}", max_candidates);
 
-                        let dist = ((dist(&candidate.location, &candidate_pos)
-                            / candidate.module_size) + 7.0)
-                            as u32;
-
-                        if dist >= 21 && dist % 4 == 1
-                            && !is_diagonal(&candidate.location, &candidate_pos)
-                        {
-                            loc_candidate.positions.push(candidate.location);
-                            loc_candidate.version = (dist - 1) / 4;
-
-                            continue 'candidates;
-                        }
-                    } else if loc_candidate.positions.len() == 2 && loc_candidate.version != 0 {
-                        let mut add = false;
-                        for candidate_pos in loc_candidate.positions.iter() {
-                            let dist = ((dist(&candidate.location, &candidate_pos)
-                                / candidate.module_size)
-                                + 7.0) as u32;
-
-                            let version = (dist - 1) / 4;
-                            if version == loc_candidate.version
-                                && !is_diagonal(&candidate.location, &candidate_pos)
-                            {
-                                add = true;
-                            }
-                        }
-
-                        if add {
-                            loc_candidate.positions.push(candidate.location);
-
-                            continue 'candidates;
-                        }
-                    }
+        for candidate1 in 0..max_candidates {
+            for candidate2 in candidate1 + 1..max_candidates {
+                if candidates[candidate1].module_size - candidates[candidate2].module_size > 0.05 {
+                    continue;
                 }
-            }
 
-            loc_candidates.push(LocationCandidate {
-                positions: vec![candidate.location],
-                module_size: candidate.module_size,
-                version: 0,
-            });
-        }
-
-        for loc_candidate in loc_candidates {
-            if loc_candidate.positions.len() == 3 {
-                let pos = &loc_candidate.positions;
-
-                if is_diagonal(&pos[0], &pos[1]) {
-                    let ax = pos[2].x - pos[0].x;
-                    let ay = pos[2].y - pos[0].y;
-                    let bx = pos[2].x - pos[1].x;
-                    let by = pos[2].y - pos[1].y;
-
-                    if ax * by - ay * bx > 0.0 {
-                        locations.push(QRLocation {
-                            top_left: pos[2],
-                            top_right: pos[1],
-                            bottom_left: pos[0],
-                            module_size: loc_candidate.module_size,
-                            version: loc_candidate.version,
-                        });
-                    } else {
-                        locations.push(QRLocation {
-                            top_left: pos[2],
-                            top_right: pos[0],
-                            bottom_left: pos[1],
-                            module_size: loc_candidate.module_size,
-                            version: loc_candidate.version,
-                        });
+                for candidate3 in candidate2 + 1..max_candidates {
+                    if candidates[candidate1].module_size - candidates[candidate3].module_size
+                        > 0.05
+                    {
+                        continue;
                     }
-                } else if is_diagonal(&pos[0], &pos[2]) {
-                    let ax = pos[1].x - pos[0].x;
-                    let ay = pos[1].y - pos[0].y;
-                    let bx = pos[1].x - pos[2].x;
-                    let by = pos[1].y - pos[2].y;
 
-                    if ax * by - ay * bx > 0.0 {
-                        locations.push(QRLocation {
-                            top_left: pos[1],
-                            top_right: pos[2],
-                            bottom_left: pos[0],
-                            module_size: loc_candidate.module_size,
-                            version: loc_candidate.version,
-                        });
-                    } else {
-                        locations.push(QRLocation {
-                            top_left: pos[1],
-                            top_right: pos[0],
-                            bottom_left: pos[2],
-                            module_size: loc_candidate.module_size,
-                            version: loc_candidate.version,
-                        });
-                    }
-                } else {
-                    let ax = pos[0].x - pos[2].x;
-                    let ay = pos[0].y - pos[2].y;
-                    let bx = pos[0].x - pos[1].x;
-                    let by = pos[0].y - pos[1].y;
-
-                    if ax * by - ay * bx > 0.0 {
-                        locations.push(QRLocation {
-                            top_left: pos[0],
-                            top_right: pos[1],
-                            bottom_left: pos[2],
-                            module_size: loc_candidate.module_size,
-                            version: loc_candidate.version,
-                        });
-                    } else {
-                        locations.push(QRLocation {
-                            top_left: pos[0],
-                            top_right: pos[2],
-                            bottom_left: pos[1],
-                            module_size: loc_candidate.module_size,
-                            version: loc_candidate.version,
-                        });
+                    if let Some(qr) = find_qr(
+                        &candidates[candidate1].location,
+                        &candidates[candidate2].location,
+                        &candidates[candidate3].location,
+                        candidates[candidate1].module_size,
+                    ) {
+                        locations.push(qr);
                     }
                 }
             }
@@ -219,13 +120,6 @@ impl Locate<GrayImage> for LineScan {
 
         locations
     }
-}
-
-#[derive(Debug)]
-struct LocationCandidate {
-    positions: Vec<Point>,
-    module_size: f64,
-    version: u32,
 }
 
 impl LineScan {
@@ -422,18 +316,73 @@ fn diff(a: f64, b: f64) -> f64 {
 
 #[inline]
 fn dist(one: &Point, other: &Point) -> f64 {
-    let dist = (one.x - other.x).powf(2.0) + (one.y - other.y).powf(2.0);
+    let dist = ((one.x - other.x) * (one.x - other.x)) + ((one.y - other.y) * (one.y - other.y));
     dist.sqrt()
 }
 
 #[inline]
-fn is_diagonal(one: &Point, other: &Point) -> bool {
-    let dx = (one.x - other.x).abs();
-    let dy = (one.y - other.y).abs();
-
-    if dx > dy {
-        dx / 2.0 < dy
+fn find_qr(one: &Point, two: &Point, three: &Point, module_size: f64) -> Option<QRLocation> {
+    if let Some(qr) = find_qr_internal(one, two, three, module_size) {
+        return Some(qr);
+    } else if let Some(qr) = find_qr_internal(two, one, three, module_size) {
+        return Some(qr);
+    } else if let Some(qr) = find_qr_internal(three, one, two, module_size) {
+        return Some(qr);
     } else {
-        dy / 2.0 < dx
+        return None;
+    }
+}
+
+fn find_qr_internal(
+    one: &Point,
+    two: &Point,
+    three: &Point,
+    module_size: f64,
+) -> Option<QRLocation> {
+    let ax = two.x - one.x;
+    let ay = two.y - one.y;
+    let bx = three.x - one.x;
+    let by = three.y - one.y;
+
+    // for images flip the cross product since y is positive towards the bottom
+    let cross_product = -(ax * by - ay * bx);
+    let len_a = (ax * ax + ay * ay).sqrt();
+    let len_b = (bx * bx + by * by).sqrt();
+
+    let perpendicular = cross_product / len_a / len_b;
+
+    if (perpendicular.abs() - 1.0).abs() > 0.01 {
+        return None;
+    }
+
+    let mut dist = ((dist(one, three) / module_size) + 7.0) as u32;
+
+    if dist < 20 {
+        return None;
+    }
+
+    dist = match dist % 4 {
+        0 => dist + 1,
+        1 => dist,
+        2 => dist - 1,
+        _ => return None,
+    };
+
+    if perpendicular > 0.0 {
+        Some(QRLocation {
+            top_left: one.clone(),
+            top_right: three.clone(),
+            bottom_left: two.clone(),
+            module_size,
+            version: (dist - 17) / 4,
+        })
+    } else {
+        Some(QRLocation {
+            top_left: one.clone(),
+            top_right: two.clone(),
+            bottom_left: three.clone(),
+            module_size,
+            version: (dist - 17) / 4,
+        })
     }
 }
