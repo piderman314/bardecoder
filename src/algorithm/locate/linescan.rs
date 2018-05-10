@@ -37,49 +37,54 @@ impl Locate<GrayImage> for LineScan {
 
             if p.data[0] == last_pixel {
                 pattern.4 += 1;
-            } else {
-                if pattern.looks_like_finder() {
-                    let mut module_size = pattern.est_mod_size();
+                continue 'pixels;
+            }
 
-                    let mut finder_x = x - (pattern.0 + pattern.1 + pattern.2 / 2) as u32;
-                    let mut finder_y = y;
-
-                    for candidate in &candidates {
-                        if dist(finder_x, finder_y, candidate.x, candidate.y) < 7.0 * module_size {
-                            last_pixel = p.data[0];
-                            pattern.slide();
-
-                            continue 'pixels;
-                        }
-                    }
-
-                    for (refine_func, dx, dy) in refine_func.iter() {
-                        let vert = refine_func(&self, threshold, finder_x, finder_y, module_size);
-
-                        if vert.is_none() {
-                            last_pixel = p.data[0];
-                            pattern.slide();
-
-                            continue 'pixels;
-                        }
-
-                        let vert = vert.unwrap();
-                        let half_finder = (3.5 * vert.module_size) as u32;
-                        finder_x = vert.x - dx * half_finder;
-                        finder_y = vert.y - dy * half_finder;
-                        module_size = vert.module_size;
-                    }
-
-                    candidates.push(QRFinderPosition {
-                        x: finder_x,
-                        y: finder_y,
-                        module_size,
-                    });
-                }
-
+            if !pattern.looks_like_finder() {
                 last_pixel = p.data[0];
                 pattern.slide();
+                continue 'pixels;
             }
+
+            let mut module_size = pattern.est_mod_size();
+
+            let mut finder_x = x - (pattern.0 + pattern.1 + pattern.2 / 2) as u32;
+            let mut finder_y = y;
+
+            for candidate in &candidates {
+                if dist(finder_x, finder_y, candidate.x, candidate.y) < 7.0 * module_size {
+                    last_pixel = p.data[0];
+                    pattern.slide();
+
+                    continue 'pixels;
+                }
+            }
+
+            for (refine_func, dx, dy) in refine_func.iter() {
+                let vert = refine_func(&self, threshold, finder_x, finder_y, module_size);
+
+                if vert.is_none() {
+                    last_pixel = p.data[0];
+                    pattern.slide();
+
+                    continue 'pixels;
+                }
+
+                let vert = vert.unwrap();
+                let half_finder = (3.5 * vert.module_size) as u32;
+                finder_x = vert.x - dx * half_finder;
+                finder_y = vert.y - dy * half_finder;
+                module_size = vert.module_size;
+            }
+
+            candidates.push(QRFinderPosition {
+                x: finder_x,
+                y: finder_y,
+                module_size,
+            });
+
+            last_pixel = p.data[0];
+            pattern.slide();
         }
 
         candidates
