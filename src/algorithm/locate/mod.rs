@@ -1,3 +1,5 @@
+use super::Point;
+
 use image::GrayImage;
 
 pub trait Locate<T> {
@@ -26,10 +28,4 @@ pub struct QRLocation {
 pub struct QRFinderPosition {
     pub location: Point,
     pub module_size: f64,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct Point {
-    pub x: f64,
-    pub y: f64,
 }
