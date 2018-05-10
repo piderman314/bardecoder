@@ -91,8 +91,6 @@ impl Locate<GrayImage> for LineScan {
 
         let max_candidates = candidates.len();
 
-        println!("{}", max_candidates);
-
         for candidate1 in 0..max_candidates {
             for candidate2 in candidate1 + 1..max_candidates {
                 if candidates[candidate1].module_size - candidates[candidate2].module_size > 0.05 {
