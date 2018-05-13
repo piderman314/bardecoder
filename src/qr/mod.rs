@@ -1,6 +1,10 @@
+use std::error::Error;
+use std::fmt;
 use std::ops::Index;
 
 use point::Point;
+
+pub mod format;
 
 #[derive(Debug)]
 pub struct QRData {
@@ -23,7 +27,12 @@ impl Index<[u32; 2]> for QRData {
     type Output = u8;
 
     fn index(&self, index: [u32; 2]) -> &u8 {
-        &self.data[index[1] as usize * self.side as usize + index[0] as usize]
+        let pixel = self.data[index[1] as usize * self.side as usize + index[0] as usize];
+        if pixel == 0 {
+            &1
+        } else {
+            &0
+        }
     }
 }
 
@@ -40,4 +49,21 @@ pub struct QRLocation {
 pub struct QRFinderPosition {
     pub location: Point,
     pub module_size: f64,
+}
+
+#[derive(Debug)]
+pub struct QRError {
+    msg: String,
+}
+
+impl Error for QRError {
+    fn description(&self) -> &str {
+        &self.msg
+    }
+}
+
+impl fmt::Display for QRError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "QRError: {}", self.msg)
+    }
 }
