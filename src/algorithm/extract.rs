@@ -1,5 +1,7 @@
 use super::locate::QRLocation;
 
+use std::ops::Index;
+
 use image::GrayImage;
 
 pub trait Extract<T> {
@@ -10,6 +12,26 @@ pub trait Extract<T> {
 pub struct QRData {
     pub data: Vec<u8>,
     pub version: u32,
+
+    pub side: u32,
+}
+
+impl QRData {
+    pub fn new(data: Vec<u8>, version: u32) -> QRData {
+        QRData {
+            data,
+            version,
+            side: 4 * version + 17,
+        }
+    }
+}
+
+impl Index<(usize, usize)> for QRData {
+    type Output = u8;
+
+    fn index(&self, index: (usize, usize)) -> &u8 {
+        &self.data[index.0 * self.side as usize + index.1]
+    }
 }
 
 pub struct QRExtractor {}
@@ -49,10 +71,7 @@ impl Extract<GrayImage> for QRExtractor {
                 start = start + dy;
             }
 
-            qr_data.push(QRData {
-                data,
-                version: loc.version,
-            });
+            qr_data.push(QRData::new(data, loc.version));
         }
 
         qr_data
