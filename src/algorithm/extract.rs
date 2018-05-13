@@ -1,37 +1,12 @@
-use super::locate::QRLocation;
+use qr::QRData;
+use qr::QRLocation;
 
-use std::ops::Index;
-
+use image::DynamicImage;
 use image::GrayImage;
+use image::Rgb;
 
 pub trait Extract<T> {
     fn extract(&self, threshold: &T, locs: Vec<QRLocation>) -> Vec<QRData>;
-}
-
-#[derive(Debug)]
-pub struct QRData {
-    pub data: Vec<u8>,
-    pub version: u32,
-
-    pub side: u32,
-}
-
-impl QRData {
-    pub fn new(data: Vec<u8>, version: u32) -> QRData {
-        QRData {
-            data,
-            version,
-            side: 4 * version + 17,
-        }
-    }
-}
-
-impl Index<(usize, usize)> for QRData {
-    type Output = u8;
-
-    fn index(&self, index: (usize, usize)) -> &u8 {
-        &self.data[index.0 * self.side as usize + index.1]
-    }
 }
 
 pub struct QRExtractor {}
@@ -60,16 +35,31 @@ impl Extract<GrayImage> for QRExtractor {
 
             let mut data = vec![];
 
+            let mut i = DynamicImage::ImageLuma8(threshold.clone()).to_rgb();
+
             for _ in 0..size {
                 let mut line = start.clone();
 
                 for _ in 0..size {
-                    data.push(threshold.get_pixel(line.x.round() as u32, line.y.round() as u32)[0]);
+                    let pixel =
+                        threshold.get_pixel(line.x.round() as u32, line.y.round() as u32)[0];
+
+                    if pixel == 0 {
+                        i.put_pixel(
+                            line.x.round() as u32,
+                            line.y.round() as u32,
+                            Rgb { data: [255, 0, 0] },
+                        );
+                    }
+
+                    data.push(pixel);
                     line = line + dx;
                 }
 
                 start = start + dy;
             }
+
+            i.save("D:/prog/rust/qrs_bin/testimg/out.png").unwrap();
 
             qr_data.push(QRData::new(data, loc.version));
         }

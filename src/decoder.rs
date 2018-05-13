@@ -4,7 +4,6 @@ use image::GrayImage;
 use algorithm::decode::Decode;
 use algorithm::decode::QRDecoder;
 use algorithm::extract::Extract;
-use algorithm::extract::QRData;
 use algorithm::extract::QRExtractor;
 use algorithm::grayscale::Grayscale;
 use algorithm::grayscale::ToLuma;

@@ -1,5 +1,7 @@
 use super::*;
 
+use qr::QRFinderPosition;
+
 use std::cmp::{max, min};
 use std::iter::repeat;
 use std::iter::Iterator;

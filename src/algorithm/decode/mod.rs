@@ -1,6 +1,6 @@
 pub mod galois;
 
-use super::extract::QRData;
+use qr::QRData;
 
 pub trait Decode {
     fn decode(&self, data: &Vec<QRData>) -> String;
