@@ -35,31 +35,16 @@ impl Extract<GrayImage> for QRExtractor {
 
             let mut data = vec![];
 
-            let mut i = DynamicImage::ImageLuma8(threshold.clone()).to_rgb();
-
             for _ in 0..size {
                 let mut line = start.clone();
 
                 for _ in 0..size {
-                    let pixel =
-                        threshold.get_pixel(line.x.round() as u32, line.y.round() as u32)[0];
-
-                    if pixel == 0 {
-                        i.put_pixel(
-                            line.x.round() as u32,
-                            line.y.round() as u32,
-                            Rgb { data: [255, 0, 0] },
-                        );
-                    }
-
-                    data.push(pixel);
+                    data.push(threshold.get_pixel(line.x.round() as u32, line.y.round() as u32)[0]);
                     line = line + dx;
                 }
 
                 start = start + dy;
             }
-
-            i.save("D:/prog/rust/qrs_bin/testimg/out.png").unwrap();
 
             qr_data.push(QRData::new(data, loc.version));
         }
