@@ -4,7 +4,10 @@ use std::ops::Index;
 
 use point::Point;
 
+use self::format::ECLevel;
+
 pub mod blocks;
+pub mod correct;
 pub mod format;
 
 #[derive(Debug)]
@@ -50,6 +53,32 @@ pub struct QRLocation {
 pub struct QRFinderPosition {
     pub location: Point,
     pub module_size: f64,
+}
+
+#[derive(Debug)]
+pub struct BlockInfo {
+    pub block_count: u8,
+    pub total_per: u8,
+    pub data_per: u8,
+    pub ec_cap: u8,
+}
+
+impl BlockInfo {
+    pub fn new(block_count: u8, total_per: u8, data_per: u8, ec_cap: u8) -> BlockInfo {
+        BlockInfo {
+            block_count,
+            total_per,
+            data_per,
+            ec_cap,
+        }
+    }
+}
+
+pub fn block_info(version: u32, level: ECLevel) -> Option<Vec<BlockInfo>> {
+    match (version, level) {
+        (1, ECLevel::MEDIUM) => Some(vec![BlockInfo::new(1, 26, 16, 4)]),
+        _ => None,
+    }
 }
 
 #[derive(Debug)]

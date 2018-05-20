@@ -4,7 +4,7 @@ use qr::{QRData, QRError};
 const MASK: [u8; 15] = [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0];
 
 #[derive(Debug)]
-pub enum ErrorCorrection {
+pub enum ECLevel {
     LOW,
     MEDIUM,
     QUARTILE,
@@ -13,7 +13,7 @@ pub enum ErrorCorrection {
 
 pub type QRMask = Fn(&QRData, u32, u32) -> u8;
 
-pub fn format(data: &QRData) -> Result<(ErrorCorrection, Box<QRMask>), QRError> {
+pub fn format(data: &QRData) -> Result<(ECLevel, Box<QRMask>), QRError> {
     let mut format = format1(data);
 
     if let Err(_) = format {
@@ -132,12 +132,12 @@ fn correct(mut format: Vec<u8>) -> Result<Vec<u8>, QRError> {
     })
 }
 
-fn error_correction(bytes: u8) -> Option<ErrorCorrection> {
+fn error_correction(bytes: u8) -> Option<ECLevel> {
     match bytes {
-        0b01 => Some(ErrorCorrection::LOW),
-        0b00 => Some(ErrorCorrection::MEDIUM),
-        0b11 => Some(ErrorCorrection::QUARTILE),
-        0b10 => Some(ErrorCorrection::HIGH),
+        0b01 => Some(ECLevel::LOW),
+        0b00 => Some(ECLevel::MEDIUM),
+        0b11 => Some(ECLevel::QUARTILE),
+        0b10 => Some(ECLevel::HIGH),
         _ => None,
     }
 }

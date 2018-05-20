@@ -33,7 +33,7 @@ pub fn blocks(data: &QRData, mask: Box<QRMask>) -> Result<Vec<Vec<u8>>, QRError>
 }
 
 fn y_range(x: u32, side: u32) -> Box<Iterator<Item = u32>> {
-    if (x - side + 1) % 4 == 0 {
+    if (x as i64 - side as i64 + 1) % 4 == 0 {
         Box::new((0..side).rev())
     } else {
         Box::new(0..side)
