@@ -160,13 +160,7 @@ type Mask = Fn(u32, u32) -> bool;
 
 fn qrmask(mask: Box<Mask>) -> Option<Box<QRMask>> {
     Some(Box::new(move |q: &QRData, i: u32, j: u32| {
-        let d = q[[i, j]];
-
-        if i <= 8 || j <= 8 || i >= q.side - 8 || j >= q.side - 8 {
-            return d;
-        }
-
-        d ^ (if mask(i, j) { 1 } else { 0 })
+        q[[i, j]] ^ (if mask(i, j) { 1 } else { 0 })
     }))
 }
 
@@ -178,7 +172,7 @@ mod test {
 
     #[test]
     pub fn test_correct() {
-        let mut input = CORRECT.to_vec();
+        let input = CORRECT.to_vec();
         let input_to_check = input.clone();
 
         let output = correct(input);
@@ -188,7 +182,7 @@ mod test {
 
     #[test]
     pub fn test_fixable() {
-        let mut input_orig = CORRECT.to_vec();
+        let input_orig = CORRECT.to_vec();
         let mut input_fixable = input_orig.clone();
         input_fixable[4] ^= 1;
         input_fixable[12] ^= 1;
@@ -200,7 +194,7 @@ mod test {
 
     #[test]
     pub fn test_corrupt() {
-        let mut input_orig = CORRECT.to_vec();
+        let input_orig = CORRECT.to_vec();
         let mut input_corrupt = input_orig.clone();
         input_corrupt[4] ^= 1;
         input_corrupt[5] ^= 1;

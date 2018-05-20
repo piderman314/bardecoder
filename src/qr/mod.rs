@@ -4,6 +4,7 @@ use std::ops::Index;
 
 use point::Point;
 
+pub mod blocks;
 pub mod format;
 
 #[derive(Debug)]
