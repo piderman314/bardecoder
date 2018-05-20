@@ -1,9 +1,7 @@
 use qr::QRData;
 use qr::QRLocation;
 
-use image::DynamicImage;
 use image::GrayImage;
-use image::Rgb;
 
 pub trait Extract<T> {
     fn extract(&self, threshold: &T, locs: Vec<QRLocation>) -> Vec<QRData>;
