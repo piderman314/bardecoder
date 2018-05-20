@@ -3,6 +3,7 @@ use qr::{QRData, QRError};
 
 const MASK: [u8; 15] = [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0];
 
+#[derive(Debug)]
 pub enum ErrorCorrection {
     LOW,
     MEDIUM,
@@ -13,11 +14,18 @@ pub enum ErrorCorrection {
 pub type QRMask = Fn(&QRData, u32, u32) -> u8;
 
 pub fn format(data: &QRData) -> Result<(ErrorCorrection, Box<QRMask>), QRError> {
-    let format1 = format1(data);
+    let mut format = format1(data);
 
-    Err(QRError {
-        msg: String::from("Help!"),
-    })
+    if let Err(_) = format {
+        format = format2(data);
+    }
+
+    let format = format?;
+
+    let correction = error_correction(2 * format[0] + format[1]).unwrap();
+    let mask = mask(4 * format[2] + 2 * format[3] + format[4]).unwrap();
+
+    Ok((correction, mask))
 }
 
 fn format1(data: &QRData) -> Result<Vec<u8>, QRError> {
@@ -28,7 +36,7 @@ fn format1(data: &QRData) -> Result<Vec<u8>, QRError> {
             continue;
         }
 
-        format1.push(if data[[x, 8]] == 0 { 1 } else { 0 });
+        format1.push(data[[x, 8]]);
     }
 
     for y in (0..8).rev() {
@@ -36,7 +44,7 @@ fn format1(data: &QRData) -> Result<Vec<u8>, QRError> {
             continue;
         }
 
-        format1.push(if data[[8, y]] == 0 { 1 } else { 0 });
+        format1.push(data[[8, y]]);
     }
 
     for i in 0..format1.len() {
@@ -50,11 +58,11 @@ fn format2(data: &QRData) -> Result<Vec<u8>, QRError> {
     let mut format2 = vec![];
 
     for y in (data.side - 7..data.side).rev() {
-        format2.push(if data[[8, y]] == 0 { 1 } else { 0 });
+        format2.push(data[[8, y]]);
     }
 
     for x in data.side - 8..data.side {
-        format2.push(if data[[x, 8]] == 0 { 1 } else { 0 });
+        format2.push(data[[x, 8]]);
     }
 
     for i in 0..format2.len() {
