@@ -1,5 +1,8 @@
 extern crate image;
 
+#[macro_use]
+extern crate log;
+
 pub mod algorithm;
 mod decoder;
 pub mod point;
