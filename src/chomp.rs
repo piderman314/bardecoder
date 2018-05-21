@@ -23,6 +23,24 @@ impl Chomp {
         }
     }
 
+    pub fn chomp_or<E>(&mut self, nr_bits: u8, err: E) -> Result<u8, E> {
+        self.chomp(nr_bits).ok_or(err)
+    }
+
+    pub fn chomp_or_u16<E: Clone>(&mut self, nr_bits: u8, err: E) -> Result<u16, E> {
+        let mut bits = nr_bits;
+
+        let mut result: u16 = 0;
+        while bits > 8 {
+            result = (self.chomp(8).ok_or(err.clone())? as u16) << (bits - 8);
+            bits -= 8;
+        }
+
+        result += self.chomp(bits).ok_or(err.clone())? as u16;
+
+        Ok(result)
+    }
+
     pub fn chomp(&mut self, nr_bits: u8) -> Option<u8> {
         if nr_bits < 1 || nr_bits > 8 || nr_bits as usize > self.bits_left {
             return None;
@@ -120,6 +138,15 @@ mod test {
         assert_eq!(Some(0b110001), chomp.chomp(6));
         assert_eq!(Some(0b00), chomp.chomp(2));
         assert_eq!(Some(0b1010), chomp.chomp(4));
+        assert_eq!(Some(0b1010), chomp.chomp(4));
+        assert_eq!(None, chomp.chomp(4));
+    }
+
+    #[test]
+    pub fn chomp_u16() {
+        let mut chomp = Chomp::new(vec![0b11000100, 0b10101010]);
+
+        assert_eq!(Ok(0b110001001010), chomp.chomp_or_u16(12, ()));
         assert_eq!(Some(0b1010), chomp.chomp(4));
         assert_eq!(None, chomp.chomp(4));
     }

@@ -1,5 +1,6 @@
 pub mod galois;
 
+use qr;
 use qr::QRData;
 
 pub trait Decode {
@@ -16,6 +17,9 @@ impl QRDecoder {
 
 impl Decode for QRDecoder {
     fn decode(&self, data: &Vec<QRData>) -> String {
-        String::from("Hello world!")
+        let test = qr::format::format(&data[0]).unwrap();
+        let codewords = qr::blocks::blocks(&data[0], test.1).unwrap();
+        let corrected = qr::correct::correct(codewords, &data[0], test.0).unwrap();
+        qr::data::data(corrected[0].clone(), data[0].version).unwrap()
     }
 }

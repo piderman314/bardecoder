@@ -8,6 +8,7 @@ use self::format::ECLevel;
 
 pub mod blocks;
 pub mod correct;
+pub mod data;
 pub mod format;
 
 #[derive(Debug)]
@@ -81,7 +82,7 @@ pub fn block_info(version: u32, level: ECLevel) -> Option<Vec<BlockInfo>> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct QRError {
     msg: String,
 }
