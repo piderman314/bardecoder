@@ -4,6 +4,7 @@ extern crate image;
 extern crate log;
 
 pub mod algorithm;
+pub mod chomp;
 mod decoder;
 pub mod point;
 pub mod qr;
