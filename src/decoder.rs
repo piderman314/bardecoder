@@ -12,6 +12,8 @@ use algorithm::locate::Locate;
 use algorithm::threshold::BlockedMean;
 use algorithm::threshold::Threshold;
 
+use qr::QRError;
+
 pub struct Decoder<S, G, T> {
     grayscale: Box<Grayscale<S, G>>,
     threshold: Box<Threshold<G, T>>,
@@ -21,10 +23,15 @@ pub struct Decoder<S, G, T> {
 }
 
 impl<S, G, T> Decoder<S, G, T> {
-    pub fn decode(&self, source: &S) -> String {
+    pub fn decode(&self, source: &S) -> Vec<Result<String, QRError>> {
         let grayscale = self.grayscale.to_grayscale(source);
         let threshold = self.threshold.to_threshold(grayscale);
         let locations = self.locate.locate(&threshold);
+
+        if locations.len() == 0 {
+            return vec![];
+        }
+
         let extraction = self.extract.extract(&threshold, locations);
         self.decode.decode(&extraction)
     }

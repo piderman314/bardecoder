@@ -82,7 +82,7 @@ pub fn block_info(version: u32, level: ECLevel) -> Option<Vec<BlockInfo>> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct QRError {
     msg: String,
 }
