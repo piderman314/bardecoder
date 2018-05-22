@@ -37,7 +37,7 @@ impl Locate<GrayImage> for LineScan {
             }
 
             if p.data[0] == last_pixel {
-                pattern.4 += 1;
+                pattern.6 += 1;
                 continue 'pixels;
             }
 
@@ -217,7 +217,7 @@ impl LineScan {
         for (x, y) in range_x.zip(range_y) {
             let p = threshold.get_pixel(x, y)[0];
             if p == last_pixel {
-                pattern.4 += 1;
+                pattern.6 += 1;
             } else {
                 if pattern.looks_like_finder() {
                     if diff(module_size, pattern.est_mod_size()) < 0.2 {
@@ -258,27 +258,39 @@ impl LineScan {
 }
 
 #[derive(Debug)]
-struct QRFinderPattern(u32, u32, u32, u32, u32);
+struct QRFinderPattern(u32, u32, u32, u32, u32, u32, u32);
 
 impl QRFinderPattern {
     fn new() -> QRFinderPattern {
-        QRFinderPattern(0, 0, 0, 0, 0)
+        QRFinderPattern(0, 0, 0, 0, 0, 0, 0)
     }
 
     fn slide(&mut self) {
-        self.0 = self.1;
-        self.1 = self.2;
-        self.2 = self.3;
-        self.3 = self.4;
-        self.4 = 1;
+        if (self.6 as f64) < self.5 as f64 / 10.0 {
+            self.6 += self.5;
+            self.5 = self.4;
+            self.4 = self.3;
+            self.3 = self.2;
+            self.2 = self.1;
+            self.1 = self.0;
+            self.0 = 0;
+        } else {
+            self.0 = self.1;
+            self.1 = self.2;
+            self.2 = self.3;
+            self.3 = self.4;
+            self.4 = self.5;
+            self.5 = self.6;
+            self.6 = 1;
+        }
     }
 
     fn est_mod_size(&self) -> f64 {
-        (self.0 + self.1 + self.2 + self.3 + self.4) as f64 / 7.0
+        (self.2 + self.3 + self.4 + self.5 + self.6) as f64 / 7.0
     }
 
     fn looks_like_finder(&self) -> bool {
-        let total_size = self.0 + self.1 + self.2 + self.3 + self.4;
+        let total_size = self.2 + self.3 + self.4 + self.5 + self.6;
 
         if total_size < 7 {
             return false;
@@ -287,15 +299,7 @@ impl QRFinderPattern {
         let module_size: f64 = total_size as f64 / 7.0;
         let max_variance = module_size as f64 / 1.5;
 
-        if (module_size - self.0 as f64).abs() > max_variance {
-            return false;
-        }
-
-        if (module_size - self.1 as f64).abs() > max_variance {
-            return false;
-        }
-
-        if (module_size * 3.0 - self.2 as f64).abs() > max_variance {
+        if (module_size - self.2 as f64).abs() > max_variance {
             return false;
         }
 
@@ -303,7 +307,15 @@ impl QRFinderPattern {
             return false;
         }
 
-        if (module_size - self.4 as f64).abs() > max_variance {
+        if (module_size * 3.0 - self.4 as f64).abs() > max_variance {
+            return false;
+        }
+
+        if (module_size - self.5 as f64).abs() > max_variance {
+            return false;
+        }
+
+        if (module_size - self.6 as f64).abs() > max_variance {
             return false;
         }
 
@@ -355,7 +367,7 @@ fn find_qr_internal(
     let len_a = (ax * ax + ay * ay).sqrt();
     let len_b = (bx * bx + by * by).sqrt();
 
-    if diff(len_a, len_b) > 0.05 {
+    if diff(len_a, len_b) > 0.06 {
         return None;
     }
 
