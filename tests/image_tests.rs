@@ -3,10 +3,19 @@ extern crate image;
 
 #[test]
 pub fn test_version1_example() {
-    let img = image::open("tests/images/version1_example.jpg").unwrap();
+    test_image("tests/images/version1_example.jpg", "01234567");
+}
+
+#[test]
+pub fn test_version1_example_upside_down() {
+    test_image("tests/images/version1_example_upside_down.jpg", "01234567");
+}
+
+pub fn test_image(file: &str, expected: &str) {
+    let img = image::open(file).unwrap();
 
     let decoder = bardecoder::default_decoder();
     let result = decoder.decode(&img);
 
-    assert_eq!("01234567", result);
+    assert_eq!(expected, result);
 }
