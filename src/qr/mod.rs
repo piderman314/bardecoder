@@ -77,6 +77,7 @@ impl BlockInfo {
 
 pub fn block_info(version: u32, level: ECLevel) -> Result<Vec<BlockInfo>, QRError> {
     match (version, level) {
+        (1, ECLevel::LOW) => Ok(vec![BlockInfo::new(1, 26, 19, 2)]),
         (1, ECLevel::MEDIUM) => Ok(vec![BlockInfo::new(1, 26, 16, 4)]),
         (version, level) => Err(QRError {
             msg: format!(

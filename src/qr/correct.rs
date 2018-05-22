@@ -31,7 +31,7 @@ pub fn correct(
 
     let mut eq = vec![vec![GF8(0); block_info.ec_cap as usize + 1]; block_info.ec_cap as usize];
     for i in 0..block_info.ec_cap as usize {
-        for j in 0..5 {
+        for j in 0..block_info.ec_cap as usize + 1 {
             eq[i][j] = syndromes[i + j];
         }
     }
@@ -41,11 +41,17 @@ pub fn correct(
     let mut locs = vec![];
 
     for i in 0..255 {
-        let x = GF8(i);
+        let x_orig = GF8(i);
 
-        if sigma[0] + sigma[1] * x + sigma[2] * x * x + sigma[3] * x * x * x + x * x * x * x
-            == GF8(0)
-        {
+        let mut x = x_orig;
+        let mut check_value = sigma[0];
+        for i in 1..sigma.len() {
+            check_value = check_value + x * sigma[i];
+            x = x * x_orig;
+        }
+        check_value = check_value + x;
+
+        if check_value == GF8(0) {
             let loc = LOG8[i as usize];
 
             if (loc as usize) < blocks[0].len() {
