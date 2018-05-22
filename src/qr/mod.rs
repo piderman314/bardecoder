@@ -75,10 +75,15 @@ impl BlockInfo {
     }
 }
 
-pub fn block_info(version: u32, level: ECLevel) -> Option<Vec<BlockInfo>> {
+pub fn block_info(version: u32, level: ECLevel) -> Result<Vec<BlockInfo>, QRError> {
     match (version, level) {
-        (1, ECLevel::MEDIUM) => Some(vec![BlockInfo::new(1, 26, 16, 4)]),
-        _ => None,
+        (1, ECLevel::MEDIUM) => Ok(vec![BlockInfo::new(1, 26, 16, 4)]),
+        (version, level) => Err(QRError {
+            msg: format!(
+                "Unknown combination of version {} and level {:?}",
+                version, level
+            ),
+        }),
     }
 }
 

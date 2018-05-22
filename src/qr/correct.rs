@@ -11,7 +11,7 @@ pub fn correct(
     data: &QRData,
     level: ECLevel,
 ) -> Result<Vec<Vec<u8>>, QRError> {
-    let block_info = &block_info(data.version, level).unwrap()[0];
+    let block_info = &block_info(data.version, level)?[0];
 
     let mut corrected = vec![];
 
