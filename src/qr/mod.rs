@@ -54,6 +54,7 @@ pub struct QRLocation {
 pub struct QRFinderPosition {
     pub location: Point,
     pub module_size: f64,
+    pub last_module_size: f64,
 }
 
 #[derive(Debug)]

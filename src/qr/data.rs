@@ -72,6 +72,8 @@ fn numeric(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
         }
     }
 
+    debug!("NUMERIC {:?}", result);
+
     Ok(result)
 }
 

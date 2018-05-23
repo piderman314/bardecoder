@@ -80,7 +80,7 @@ impl Locate<GrayImage> for LineScan {
                 }
 
                 let vert = vert.unwrap();
-                let half_finder = 3.5 * vert.module_size;
+                let half_finder = 3.5 * vert.last_module_size;
                 finder.x = vert.location.x - dx * half_finder;
                 finder.y = vert.location.y - dy * half_finder;
                 module_size = vert.module_size;
@@ -89,6 +89,7 @@ impl Locate<GrayImage> for LineScan {
             candidates.push(QRFinderPosition {
                 location: finder,
                 module_size,
+                last_module_size: 0.0,
             });
 
             last_pixel = p.data[0];
@@ -271,6 +272,7 @@ impl LineScan {
                                 y: y as f64,
                             },
                             module_size: new_est_mod_size,
+                            last_module_size: pattern.est_mod_size(),
                         });
                     }
                 }
@@ -292,6 +294,7 @@ impl LineScan {
                         y: last_y as f64,
                     },
                     module_size: new_est_mod_size,
+                    last_module_size: pattern.est_mod_size(),
                 });
             }
         }
@@ -410,17 +413,23 @@ fn find_qr_internal(
     let len_a = (ax * ax + ay * ay).sqrt();
     let len_b = (bx * bx + by * by).sqrt();
 
+    trace!("DIFF {}", diff(len_a, len_b));
+
     if diff(len_a, len_b) > 0.06 {
         return None;
     }
 
     let perpendicular = cross_product / len_a / len_b;
 
+    trace!("PERPENDICULAR {}", perpendicular);
+
     if (perpendicular.abs() - 1.0).abs() > 0.05 {
         return None;
     }
 
     let mut dist = ((dist(one, three) / module_size) + 7.0) as u32;
+
+    trace!("DIST {}", dist);
 
     if dist < 20 {
         return None;
@@ -430,6 +439,7 @@ fn find_qr_internal(
         0 => dist + 1,
         1 => dist,
         2 => dist - 1,
+        3 => dist - 2,
         _ => return None,
     };
 
