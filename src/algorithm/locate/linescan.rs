@@ -6,6 +6,12 @@ use std::cmp::{max, min};
 use std::iter::repeat;
 use std::iter::Iterator;
 
+#[cfg(feature = "debug-images")]
+use image::{DynamicImage, Rgb};
+
+#[cfg(feature = "debug-images")]
+use std::{env::temp_dir, fs::create_dir_all};
+
 pub struct LineScan {}
 
 impl LineScan {
@@ -87,6 +93,43 @@ impl Locate<GrayImage> for LineScan {
 
             last_pixel = p.data[0];
             pattern.slide();
+        }
+
+        debug!("Candidate QR Locators {:#?}", candidates);
+
+        #[cfg(feature = "debug-images")]
+        {
+            #[cfg(feature = "debug-images")]
+            let mut img = DynamicImage::ImageLuma8(threshold.clone()).to_rgb();
+
+            for c in candidates.iter() {
+                let loc = c.location;
+                let x_start = max(0, (loc.x - 3.5 * c.module_size) as u32);
+                let x_end = min(img.dimensions().0, (loc.x + 3.5 * c.module_size) as u32);
+                let y_start = max(0, (loc.y - 3.5 * c.module_size) as u32);
+                let y_end = min(img.dimensions().0, (loc.y + 3.5 * c.module_size) as u32);
+
+                for x in x_start..x_end {
+                    for y in y_start..y_end {
+                        if x > x_start + 3 && x < x_end - 3 && y > y_start + 3 && y < y_end - 3 {
+                            continue;
+                        }
+
+                        img.put_pixel(x, y, Rgb { data: [255, 0, 0] });
+                    }
+                }
+            }
+
+            let mut tmp = temp_dir();
+            tmp.push("bardecoder-debug-images");
+
+            if let Ok(_) = create_dir_all(tmp.clone()) {
+                tmp.push("candidates.png");
+
+                if let Ok(_) = DynamicImage::ImageRgb8(img).save(tmp.clone()) {
+                    debug!("Debug image with locator candidates saved to {:?}", tmp);
+                }
+            }
         }
 
         let mut locations: Vec<QRLocation> = vec![];
