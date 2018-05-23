@@ -3,6 +3,9 @@ rust:
   - stable
   - beta
   - nightly
+script:
+  - cargo test --verbose
+  - cargo check --features "debug-images"
 matrix:
   allow_failures:
     - rust: nightly
