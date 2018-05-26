@@ -1,7 +1,8 @@
-use qr::format::QRMask;
+use qr::block_info;
+use qr::format::{ECLevel, QRMask};
 use qr::{QRData, QRError};
 
-pub fn blocks(data: &QRData, mask: Box<QRMask>) -> Result<Vec<Vec<u8>>, QRError> {
+pub fn blocks(data: &QRData, level: &ECLevel, mask: Box<QRMask>) -> Result<Vec<Vec<u8>>, QRError> {
     let mut codewords = Codewords::new();
     let mut x = data.side - 1;
     let loc = alignment_location(data.version)?;
@@ -60,6 +61,14 @@ fn is_data(data: &QRData, loc: &AlignmentLocation, x: u32, y: u32) -> bool {
     // bottom left locator pattern
     if x < 9 && y > data.side - 9 {
         return false;
+    }
+
+    if x == data.side - 9 && y < 9 {
+        return true;
+    }
+
+    if y == data.side - 9 && x < 9 {
+        return true;
     }
 
     if is_alignment_coord(loc, x) && is_alignment_coord(loc, y) {

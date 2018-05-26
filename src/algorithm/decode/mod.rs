@@ -29,14 +29,14 @@ impl Decode for QRDecoder {
 
             let format = format.unwrap();
 
-            let blocks = qr::blocks::blocks(&qr_data, format.1);
+            let blocks = qr::blocks::blocks(&qr_data, &format.0, format.1);
 
             if blocks.is_err() {
                 result.push(Err(blocks.err().unwrap()));
                 continue;
             }
 
-            let corrected = qr::correct::correct(blocks.unwrap(), qr_data, format.0);
+            let corrected = qr::correct::correct(blocks.unwrap(), qr_data, &format.0);
 
             if corrected.is_err() {
                 result.push(Err(corrected.err().unwrap()));

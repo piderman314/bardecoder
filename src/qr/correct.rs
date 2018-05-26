@@ -9,7 +9,7 @@ use std::ops::{Div, Mul, Sub};
 pub fn correct(
     mut blocks: Vec<Vec<u8>>,
     data: &QRData,
-    level: ECLevel,
+    level: &ECLevel,
 ) -> Result<Vec<Vec<u8>>, QRError> {
     let block_info = &block_info(data.version, level)?[0];
 
@@ -21,6 +21,7 @@ pub fn correct(
 
     if syndromes[0] == GF8(0) {
         // all fine, nothing to do
+        debug!("SYNDROME WAS ZERO, NO CORRECTION NEEDED");
         corrected.push(blocks[0].clone());
         return Ok(corrected);
     }
@@ -28,6 +29,8 @@ pub fn correct(
     for i in 1..block_info.ec_cap * 2 {
         syndromes[i as usize] = syndrome(&blocks[0], EXP8[i as usize]);
     }
+
+    debug!("SYNDROMES {:?}", syndromes);
 
     let mut eq = vec![vec![GF8(0); block_info.ec_cap as usize + 1]; block_info.ec_cap as usize];
     for i in 0..block_info.ec_cap as usize {
@@ -73,6 +76,12 @@ pub fn correct(
 
     for i in 0..locs.len() {
         blocks[0][block_info.total_per as usize - 1 - locs[i] as usize] ^= distance[i].0;
+    }
+
+    if syndrome(&blocks[0], EXP8[0]) != GF8(0) {
+        return Err(QRError {
+            msg: String::from("Error correcting did not fix corrupted data"),
+        });
     }
 
     corrected.push(blocks[0].clone());

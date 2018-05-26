@@ -7,7 +7,8 @@ impl Add<GF8> for GF8 {
     type Output = GF8;
 
     fn add(self, other: GF8) -> GF8 {
-        GF8(self.0 ^ other.0)
+        let sum = self.0 ^ other.0;
+        GF8(sum % 255)
     }
 }
 
@@ -15,7 +16,8 @@ impl Sub<GF8> for GF8 {
     type Output = GF8;
 
     fn sub(self, other: GF8) -> GF8 {
-        GF8(self.0 ^ other.0)
+        let diff = self.0 ^ other.0;
+        GF8(diff % 255)
     }
 }
 
@@ -44,7 +46,7 @@ impl Div<GF8> for GF8 {
 
         diff = if diff < 0 { diff + 255 } else { diff };
 
-        EXP8[diff as usize]
+        EXP8[(diff % 255) as usize]
     }
 }
 

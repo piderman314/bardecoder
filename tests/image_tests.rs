@@ -27,6 +27,16 @@ pub fn test_version1_example2() {
     );
 }
 
+#[test]
+pub fn test_version3_example() {
+    test_image(
+        "tests/images/version3_example.jpg",
+        vec![Ok(String::from(
+            "https://payapp.weixin.qq.com/olspree?code_type=2",
+        ))],
+    );
+}
+
 pub fn test_image(file: &str, expected: Vec<Result<String, QRError>>) {
     let img = image::open(file).unwrap();
 
