@@ -79,7 +79,7 @@ fn is_data(data: &QRData, loc: &AlignmentLocation, x: u32, y: u32) -> bool {
 }
 
 fn is_alignment_coord(loc: &AlignmentLocation, coord: u32) -> bool {
-    if coord - 4 % 6 <= 4 {
+    if coord >= 4 && coord - 4 % 6 <= 4 {
         return true;
     }
 
@@ -87,7 +87,7 @@ fn is_alignment_coord(loc: &AlignmentLocation, coord: u32) -> bool {
         return false;
     }
 
-    if (coord - loc.start + 2) % loc.step <= 4 {
+    if (coord - (loc.start - 2)) % loc.step <= 4 {
         return true;
     }
 
