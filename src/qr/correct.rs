@@ -2,7 +2,7 @@ use qr::block_info;
 use qr::format::ECLevel;
 use qr::{BlockInfo, QRData, QRError};
 
-use algorithm::decode::galois::{EXP8, GF8, LOG8};
+use algorithm::decode::galois::{EXP8, GF8};
 
 use std::ops::{Div, Mul, Sub};
 
@@ -35,7 +35,7 @@ pub fn correct(
     let mut eq = vec![vec![GF8(0); locs.len() + 1]; locs.len()];
     for i in 0..locs.len() {
         for j in 0..locs.len() {
-            eq[i][j] = EXP8[i * locs[j] as usize];
+            eq[i][j] = EXP8[(i * locs[j] as usize) % 255];
         }
 
         eq[i][locs.len()] = syndromes[i];

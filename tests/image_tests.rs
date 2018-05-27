@@ -37,6 +37,14 @@ pub fn test_version3_example() {
     );
 }
 
+#[test]
+pub fn test_version3_example2() {
+    test_image(
+        "tests/images/version3_example2.jpg",
+        vec![Ok(String::from("http://www.prolinepetfood.com/1/"))],
+    );
+}
+
 pub fn test_image(file: &str, expected: Vec<Result<String, QRError>>) {
     let img = image::open(file).unwrap();
 
