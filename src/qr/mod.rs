@@ -57,7 +57,7 @@ pub struct QRFinderPosition {
     pub last_module_size: f64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockInfo {
     pub block_count: u8,
     pub total_per: u8,
@@ -77,18 +77,29 @@ impl BlockInfo {
 }
 
 pub fn block_info(version: u32, level: &ECLevel) -> Result<Vec<BlockInfo>, QRError> {
-    match (version, level) {
+    let block_info = match (version, level) {
         (1, ECLevel::LOW) => Ok(vec![BlockInfo::new(1, 26, 19, 2)]),
         (1, ECLevel::MEDIUM) => Ok(vec![BlockInfo::new(1, 26, 16, 4)]),
         (3, ECLevel::LOW) => Ok(vec![BlockInfo::new(1, 70, 55, 7)]),
         (3, ECLevel::MEDIUM) => Ok(vec![BlockInfo::new(1, 70, 44, 13)]),
+        (3, ECLevel::QUARTILE) => Ok(vec![BlockInfo::new(2, 35, 17, 9)]),
         (version, level) => Err(QRError {
             msg: format!(
                 "Unknown combination of version {} and level {:?}",
                 version, level
             ),
         }),
+    }?;
+
+    let mut bi_unwound = vec![];
+
+    for bi in block_info.iter() {
+        for _ in 0..bi.block_count {
+            bi_unwound.push(bi.clone());
+        }
     }
+
+    Ok(bi_unwound)
 }
 
 #[derive(Debug, Clone, PartialEq)]

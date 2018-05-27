@@ -126,6 +126,8 @@ fn alphanumeric(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
         }
     }
 
+    debug!("ALPHANUMERIC {:?}", result);
+
     Ok(result)
 }
 
@@ -156,6 +158,8 @@ fn eight_bit(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
     for _ in 0..length {
         result.push(read_bits(chomp, 8)? as char);
     }
+
+    debug!("EIGHT BIT {:?}", result);
 
     Ok(result)
 }

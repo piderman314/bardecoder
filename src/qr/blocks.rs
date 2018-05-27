@@ -1,9 +1,10 @@
 use qr::block_info;
 use qr::format::{ECLevel, QRMask};
-use qr::{QRData, QRError};
+use qr::{BlockInfo, QRData, QRError};
 
 pub fn blocks(data: &QRData, level: &ECLevel, mask: Box<QRMask>) -> Result<Vec<Vec<u8>>, QRError> {
-    let mut codewords = Codewords::new();
+    let bi = block_info(data.version, level)?;
+    let mut codewords = Codewords::new(bi);
     let mut x = data.side - 1;
     let loc = alignment_location(data.version)?;
 
@@ -31,7 +32,29 @@ pub fn blocks(data: &QRData, level: &ECLevel, mask: Box<QRMask>) -> Result<Vec<V
         }
     }
 
-    Ok(vec![codewords.codewords()])
+    let bi = block_info(data.version, level)?;
+    let blocks = codewords.blocks();
+
+    if blocks.len() != bi.len() {
+        return Err(QRError {
+            msg: format!("Expected {} blocks but found {}", bi.len(), blocks.len()),
+        });
+    }
+
+    for i in 0..blocks.len() {
+        if bi[i].total_per as usize != blocks[i].len() {
+            return Err(QRError {
+                msg: format!(
+                    "Expected {} codewords in block {} but found {}",
+                    bi[i].total_per,
+                    i,
+                    blocks[i].len()
+                ),
+            });
+        }
+    }
+
+    Ok(blocks)
 }
 
 fn y_range(x: u32, side: u32) -> Box<Iterator<Item = u32>> {
@@ -126,18 +149,74 @@ impl AlignmentLocation {
     }
 }
 
+struct Blocks {
+    block_info: Vec<BlockInfo>,
+    blocks: Vec<Vec<u8>>,
+
+    round: usize,
+    max_data_round: usize,
+    block: usize,
+    data_blocks: bool,
+}
+
+impl Blocks {
+    fn new(block_info: Vec<BlockInfo>) -> Blocks {
+        let mut blocks = vec![];
+        let mut max_data_round: usize = 0;
+
+        for bi in block_info.iter() {
+            if bi.data_per as usize > max_data_round {
+                max_data_round = bi.data_per as usize;
+            }
+
+            blocks.push(vec![]);
+        }
+
+        Blocks {
+            block_info,
+            blocks,
+            round: 0,
+            max_data_round,
+            block: 0,
+            data_blocks: true,
+        }
+    }
+
+    fn push(&mut self, byte: u8) {
+        while self.data_blocks && self.round > self.block_info[self.block].data_per as usize {
+            self.inc_count();
+        }
+
+        self.blocks[self.block].push(byte);
+        self.inc_count();
+    }
+
+    fn inc_count(&mut self) {
+        if self.block == self.block_info.len() - 1 {
+            self.block = 0;
+            self.round += 1;
+
+            if self.round > self.max_data_round {
+                self.data_blocks = false;
+            }
+        } else {
+            self.block += 1;
+        }
+    }
+}
+
 struct Codewords {
-    codewords: Vec<u8>,
     current_byte: u8,
     bit_count: u8,
+    blocks: Blocks,
 }
 
 impl Codewords {
-    fn new() -> Codewords {
+    fn new(block_info: Vec<BlockInfo>) -> Codewords {
         Codewords {
-            codewords: vec![],
             current_byte: 0,
             bit_count: 0,
+            blocks: Blocks::new(block_info),
         }
     }
 
@@ -147,14 +226,14 @@ impl Codewords {
         self.bit_count += 1;
 
         if self.bit_count == 8 {
-            self.codewords.push(self.current_byte);
+            self.blocks.push(self.current_byte);
             self.current_byte = 0;
             self.bit_count = 0;
         }
     }
 
-    fn codewords(self) -> Vec<u8> {
-        self.codewords
+    fn blocks(self) -> Vec<Vec<u8>> {
+        self.blocks.blocks
     }
 }
 

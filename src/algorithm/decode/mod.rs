@@ -1,6 +1,7 @@
 pub mod galois;
 
 use qr;
+use qr::block_info;
 use qr::{QRData, QRError};
 
 pub trait Decode {
@@ -36,24 +37,47 @@ impl Decode for QRDecoder {
                 continue;
             }
 
-            let corrected = qr::correct::correct(blocks.unwrap(), qr_data, &format.0);
+            let mut blocks = blocks.unwrap();
 
-            if corrected.is_err() {
-                result.push(Err(corrected.err().unwrap()));
+            let block_info = block_info(qr_data.version, &format.0);
+            if block_info.is_err() {
+                result.push(Err(block_info.err().unwrap()));
                 continue;
             }
 
-            let mut output = String::new();
-            for block in corrected.unwrap() {
-                let data = qr::data::data(block, qr_data.version);
+            let block_info = block_info.unwrap();
 
-                if data.is_err() {
-                    result.push(Err(data.err().unwrap()));
-                    continue 'qr_data;
+            let mut all_blocks = vec![];
+
+            let mut b = 0;
+            for block in blocks {
+                let corrected = qr::correct::correct(block, qr_data, &format.0);
+
+                if corrected.is_err() {
+                    result.push(Err(corrected.err().unwrap()));
+                    continue;
                 }
 
-                output.push_str(data.unwrap().as_str());
+                let mut corrected = corrected.unwrap();
+
+                for i in 0..block_info[b].data_per as usize {
+                    all_blocks.push(corrected[i]);
+                }
+
+                b += 1;
             }
+
+            debug!("TOTAL LENGTH {}", all_blocks.len());
+
+            let mut output = String::new();
+            let data = qr::data::data(all_blocks, qr_data.version);
+
+            if data.is_err() {
+                result.push(Err(data.err().unwrap()));
+                continue 'qr_data;
+            }
+
+            output.push_str(data.unwrap().as_str());
 
             result.push(Ok(output));
         }

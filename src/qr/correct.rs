@@ -6,28 +6,21 @@ use algorithm::decode::galois::{EXP8, GF8};
 
 use std::ops::{Div, Mul, Sub};
 
-pub fn correct(
-    mut blocks: Vec<Vec<u8>>,
-    data: &QRData,
-    level: &ECLevel,
-) -> Result<Vec<Vec<u8>>, QRError> {
+pub fn correct(mut block: Vec<u8>, data: &QRData, level: &ECLevel) -> Result<Vec<u8>, QRError> {
     let block_info = &block_info(data.version, level)?[0];
-
-    let mut corrected = vec![];
 
     let mut syndromes = vec![GF8(0); (block_info.ec_cap * 2) as usize];
 
-    syndromes[0] = syndrome(&blocks[0], EXP8[0]);
+    syndromes[0] = syndrome(&block, EXP8[0]);
 
     if syndromes[0] == GF8(0) {
         // all fine, nothing to do
         debug!("SYNDROME WAS ZERO, NO CORRECTION NEEDED");
-        corrected.push(blocks[0].clone());
-        return Ok(corrected);
+        return Ok(block);
     }
 
     for i in 1..block_info.ec_cap * 2 {
-        syndromes[i as usize] = syndrome(&blocks[0], EXP8[i as usize]);
+        syndromes[i as usize] = syndrome(&block, EXP8[i as usize]);
     }
 
     let locs = find_locs(block_info, &syndromes)?;
@@ -51,21 +44,19 @@ pub fn correct(
         debug!(
             "FIXING LOCATION {} FROM {:08b} TO {:08b}",
             block_info.total_per as usize - 1 - locs[i] as usize,
-            blocks[0][block_info.total_per as usize - 1 - locs[i] as usize],
-            blocks[0][block_info.total_per as usize - 1 - locs[i] as usize] ^ distance[i].0
+            block[block_info.total_per as usize - 1 - locs[i] as usize],
+            block[block_info.total_per as usize - 1 - locs[i] as usize] ^ distance[i].0
         );
-        blocks[0][block_info.total_per as usize - 1 - locs[i] as usize] ^= distance[i].0;
+        block[block_info.total_per as usize - 1 - locs[i] as usize] ^= distance[i].0;
     }
 
-    if syndrome(&blocks[0], EXP8[0]) != GF8(0) {
+    if syndrome(&block, EXP8[0]) != GF8(0) {
         return Err(QRError {
             msg: String::from("Error correcting did not fix corrupted data"),
         });
     }
 
-    corrected.push(blocks[0].clone());
-
-    Ok(corrected)
+    Ok(block)
 }
 
 fn syndrome(block: &Vec<u8>, base: GF8) -> GF8 {
@@ -130,11 +121,9 @@ fn find_locs(block_info: &BlockInfo, syndromes: &Vec<GF8>) -> Result<Vec<usize>,
     Ok(locs)
 }
 
-use std::fmt::Debug;
-
 fn solve<T>(mut eq: Vec<Vec<T>>, zero: T, one: T) -> Option<Vec<T>>
 where
-    T: Div<Output = T> + Mul<Output = T> + Sub<Output = T> + Copy + PartialEq + Debug,
+    T: Div<Output = T> + Mul<Output = T> + Sub<Output = T> + Copy + PartialEq,
 {
     let num_eq = eq.len() as usize;
     if num_eq == 0 {
