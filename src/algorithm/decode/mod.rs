@@ -55,7 +55,7 @@ impl Decode for QRDecoder {
 
                 if corrected.is_err() {
                     result.push(Err(corrected.err().unwrap()));
-                    continue;
+                    continue 'qr_data;
                 }
 
                 let mut corrected = corrected.unwrap();

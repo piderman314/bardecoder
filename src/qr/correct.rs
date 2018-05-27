@@ -34,10 +34,10 @@ pub fn correct(mut block: Vec<u8>, data: &QRData, level: &ECLevel) -> Result<Vec
         eq[i][locs.len()] = syndromes[i];
     }
 
-    let distance = solve(eq, GF8(0), GF8(1));
+    let distance = solve(eq, GF8(0), GF8(1), false);
 
     let distance = distance.ok_or(QRError {
-        msg: String::from("Could calculate error distances"),
+        msg: String::from("Could not calculate error distances"),
     })?;
 
     for i in 0..locs.len() {
@@ -83,7 +83,7 @@ fn find_locs(block_info: &BlockInfo, syndromes: &Vec<GF8>) -> Result<Vec<usize>,
             }
         }
 
-        sigma = solve(eq, GF8(0), GF8(1));
+        sigma = solve(eq, GF8(0), GF8(1), true);
 
         if sigma.is_some() {
             break;
@@ -121,7 +121,7 @@ fn find_locs(block_info: &BlockInfo, syndromes: &Vec<GF8>) -> Result<Vec<usize>,
     Ok(locs)
 }
 
-fn solve<T>(mut eq: Vec<Vec<T>>, zero: T, one: T) -> Option<Vec<T>>
+fn solve<T>(mut eq: Vec<Vec<T>>, zero: T, one: T, fail_on_rank: bool) -> Option<Vec<T>>
 where
     T: Div<Output = T> + Mul<Output = T> + Sub<Output = T> + Copy + PartialEq,
 {
@@ -152,7 +152,7 @@ where
         }
 
         // If the rank is too low, can't solve
-        if eq[i][num_coeff - 1] == one {
+        if fail_on_rank && eq[i][num_coeff - 1] == one {
             return None;
         }
     }

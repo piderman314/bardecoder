@@ -83,6 +83,7 @@ pub fn block_info(version: u32, level: &ECLevel) -> Result<Vec<BlockInfo>, QRErr
         (3, ECLevel::LOW) => Ok(vec![BlockInfo::new(1, 70, 55, 7)]),
         (3, ECLevel::MEDIUM) => Ok(vec![BlockInfo::new(1, 70, 44, 13)]),
         (3, ECLevel::QUARTILE) => Ok(vec![BlockInfo::new(2, 35, 17, 9)]),
+        (4, ECLevel::MEDIUM) => Ok(vec![BlockInfo::new(2, 50, 32, 9)]),
         (version, level) => Err(QRError {
             msg: format!(
                 "Unknown combination of version {} and level {:?}",

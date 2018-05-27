@@ -45,6 +45,16 @@ pub fn test_version3_example2() {
     );
 }
 
+#[test]
+pub fn test_version4_example() {
+    test_image(
+        "tests/images/version4_example.jpg",
+        vec![Ok(String::from(
+            "http://m.langnese-honing.nl/index.php?id=1870",
+        ))],
+    );
+}
+
 pub fn test_image(file: &str, expected: Vec<Result<String, QRError>>) {
     let img = image::open(file).unwrap();
 
