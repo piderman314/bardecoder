@@ -42,6 +42,10 @@ pub fn blocks(data: &QRData, level: &ECLevel, mask: Box<QRMask>) -> Result<Vec<V
     }
 
     for i in 0..blocks.len() {
+        debug!("BLOCK {}, CODEWORDS {}", i, blocks[i].len());
+    }
+
+    for i in 0..blocks.len() {
         if bi[i].total_per as usize != blocks[i].len() {
             return Err(QRError {
                 msg: format!(
@@ -58,6 +62,7 @@ pub fn blocks(data: &QRData, level: &ECLevel, mask: Box<QRMask>) -> Result<Vec<V
 }
 
 fn y_range(x: u32, side: u32) -> Box<Iterator<Item = u32>> {
+    let x = if x < 6 { x + 1 } else { x };
     if (x as i64 - side as i64 + 1) % 4 == 0 {
         Box::new((0..side).rev())
     } else {
@@ -83,6 +88,16 @@ fn is_data(data: &QRData, loc: &AlignmentLocation, x: u32, y: u32) -> bool {
 
     // bottom left locator pattern
     if x < 9 && y > data.side - 9 {
+        return false;
+    }
+
+    // top right version info
+    if data.version >= 7 && x > data.side - 12 && y < 6 {
+        return false;
+    }
+
+    // buttom left version info
+    if data.version >= 7 && y > data.side - 12 && x < 6 {
         return false;
     }
 
@@ -129,8 +144,12 @@ fn alignment_location(version: u32) -> Result<AlignmentLocation, QRError> {
         5 => Ok(AlignmentLocation::new(30, 1000)),
         6 => Ok(AlignmentLocation::new(34, 1000)),
 
+        // multiple alignment patterns
         7 => Ok(AlignmentLocation::new(22, 16)),
+        10 => Ok(AlignmentLocation::new(28, 22)),
+        25 => Ok(AlignmentLocation::new(32, 26)),
         36 => Ok(AlignmentLocation::new(24, 26)),
+        40 => Ok(AlignmentLocation::new(30, 28)),
         _ => Err(QRError {
             msg: format!("Unknown version {}", version),
         }),
@@ -183,9 +202,11 @@ impl Blocks {
     }
 
     fn push(&mut self, byte: u8) {
-        while self.data_blocks && self.round > self.block_info[self.block].data_per as usize {
+        while self.data_blocks && self.round > self.block_info[self.block].data_per as usize - 1 {
             self.inc_count();
         }
+
+        trace!("PUSHING {:08b} TO BLOCK {}", byte, self.block);
 
         self.blocks[self.block].push(byte);
         self.inc_count();
@@ -196,7 +217,7 @@ impl Blocks {
             self.block = 0;
             self.round += 1;
 
-            if self.round > self.max_data_round {
+            if self.round == self.max_data_round {
                 self.data_blocks = false;
             }
         } else {
