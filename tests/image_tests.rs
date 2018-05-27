@@ -55,6 +55,48 @@ pub fn test_version4_example() {
     );
 }
 
+#[test]
+pub fn test_wikipedia_examples() {
+    // Downloaded from https://en.wikipedia.org/wiki/QR_code
+    test_image(
+        "tests/images/wikipedia/version1_example.png",
+        vec![Ok(String::from("Ver1"))],
+    );
+
+    test_image(
+        "tests/images/wikipedia/version2_example.png",
+        vec![Ok(String::from("Version 2"))],
+    );
+
+    test_image(
+        "tests/images/wikipedia/version3_example.png",
+        vec![Ok(String::from("Version 3 QR Code"))],
+    );
+
+    test_image(
+        "tests/images/wikipedia/version4_example.png",
+        vec![Ok(String::from("Version 4 QR Code, up to 50 char"))],
+    );
+
+    test_image(
+        "tests/images/wikipedia/version10_example.png",
+        vec![Ok(String::from(
+            "VERSION 10 QR CODE, UP TO 174 CHAR AT H LEVEL, WITH 57X57 MODULES AND PLENTY OF ERROR CORRECTION TO GO AROUND.  NOTE THAT THERE ARE ADDITIONAL TRACKING BOXES",
+        ))],
+    );
+
+    let version_25_40_text = String::from("Version 40 QR Code can contain up to 1852 chars.\nA QR code (abbreviated from Quick Response code) is a type of matrix barcode (or two-dimensional code) that is designed to be read by smartphones. The code consists of black modules arranged in a square pattern on a white background. The information encoded may be text, a URL, or other data.\nCreated by Toyota subsidiary Denso Wave in 1994, the QR code is one of the most popular types of two-dimensional barcodes. The QR code was designed to allow its contents to be decoded at high speed.\nThe technology has seen frequent use in Japan and South Korea; the United Kingdom is the seventh-largest national consumer of QR codes.\nAlthough initially used for tracking parts in vehicle manufacturing, QR codes now are used in a much broader context, including both commercial tracking applications and convenience-oriented applications aimed at mobile phone users (termed mobile tagging). QR codes may be used to display text to the user, to add a vCard contact to the user\'s device, to open a Uniform Resource Identifier (URI), or to compose an e-mail or text message. Users can generate and print their own QR codes for others to scan and use by visiting one of several paid and free QR code generating sites or apps.\n");
+    test_image(
+        "tests/images/wikipedia/version25_example.png",
+        vec![Ok(version_25_40_text.clone())],
+    );
+
+    test_image(
+        "tests/images/wikipedia/version40_example.png",
+        vec![Ok(version_25_40_text)],
+    );
+}
+
 pub fn test_image(file: &str, expected: Vec<Result<String, QRError>>) {
     let img = image::open(file).unwrap();
 

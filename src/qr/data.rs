@@ -108,7 +108,6 @@ fn alphanumeric(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
     let mut result = String::new();
 
     while length > 0 {
-        debug!("ALPHANUMERIC {:?}", result);
         if length >= 2 {
             let chars = read_bits_u16(chomp, 11)?;
             result.push(ALPHANUMERIC[chars as usize / 45]);

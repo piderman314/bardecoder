@@ -77,7 +77,7 @@ impl Extract<GrayImage> for QRExtractor {
                 tmp.push("bardecoder-debug-images");
 
                 if let Ok(_) = create_dir_all(tmp.clone()) {
-                    tmp.push("data.png");
+                    tmp.push("extract.png");
 
                     if let Ok(_) = DynamicImage::ImageRgb8(img).save(tmp.clone()) {
                         debug!("Debug image with data pixels saved to {:?}", tmp);

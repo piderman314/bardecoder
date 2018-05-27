@@ -1,4 +1,3 @@
-use qr::block_info;
 use qr::format::ECLevel;
 use qr::{BlockInfo, QRData, QRError};
 
@@ -6,9 +5,7 @@ use algorithm::decode::galois::{EXP8, GF8};
 
 use std::ops::{Div, Mul, Sub};
 
-pub fn correct(mut block: Vec<u8>, data: &QRData, level: &ECLevel) -> Result<Vec<u8>, QRError> {
-    let block_info = &block_info(data.version, level)?[0];
-
+pub fn correct(mut block: Vec<u8>, block_info: &BlockInfo) -> Result<Vec<u8>, QRError> {
     let mut syndromes = vec![GF8(0); (block_info.ec_cap * 2) as usize];
 
     syndromes[0] = syndrome(&block, EXP8[0]);

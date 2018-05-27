@@ -51,11 +51,13 @@ impl Decode for QRDecoder {
 
             let mut b = 0;
             for block in blocks {
-                let corrected = qr::correct::correct(block, qr_data, &format.0);
+                let corrected = qr::correct::correct(block, &block_info[b]);
 
                 if corrected.is_err() {
                     result.push(Err(corrected.err().unwrap()));
-                    continue 'qr_data;
+                    continue; // 'qr_data;
+                } else {
+                    debug!("BLOCK {} SUCCESFULLY CORRECTED", b);
                 }
 
                 let mut corrected = corrected.unwrap();
