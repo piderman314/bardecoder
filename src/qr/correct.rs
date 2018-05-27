@@ -1,6 +1,6 @@
 use qr::block_info;
 use qr::format::ECLevel;
-use qr::{QRData, QRError};
+use qr::{BlockInfo, QRData, QRError};
 
 use algorithm::decode::galois::{EXP8, GF8, LOG8};
 
@@ -30,38 +30,7 @@ pub fn correct(
         syndromes[i as usize] = syndrome(&blocks[0], EXP8[i as usize]);
     }
 
-    debug!("SYNDROMES {:?}", syndromes);
-
-    let mut eq = vec![vec![GF8(0); block_info.ec_cap as usize + 1]; block_info.ec_cap as usize];
-    for i in 0..block_info.ec_cap as usize {
-        for j in 0..block_info.ec_cap as usize + 1 {
-            eq[i][j] = syndromes[i + j];
-        }
-    }
-
-    let sigma = solve(eq, GF8(0));
-
-    let mut locs = vec![];
-
-    for i in 0..255 {
-        let x_orig = GF8(i);
-
-        let mut x = x_orig;
-        let mut check_value = sigma[0];
-        for i in 1..sigma.len() {
-            check_value = check_value + x * sigma[i];
-            x = x * x_orig;
-        }
-        check_value = check_value + x;
-
-        if check_value == GF8(0) {
-            let loc = LOG8[i as usize];
-
-            if (loc as usize) < blocks[0].len() {
-                locs.push(loc);
-            }
-        }
-    }
+    let locs = find_locs(block_info, &syndromes)?;
 
     let mut eq = vec![vec![GF8(0); locs.len() + 1]; locs.len()];
     for i in 0..locs.len() {
@@ -72,9 +41,19 @@ pub fn correct(
         eq[i][locs.len()] = syndromes[i];
     }
 
-    let distance = solve(eq, GF8(0));
+    let distance = solve(eq, GF8(0), GF8(1));
+
+    let distance = distance.ok_or(QRError {
+        msg: String::from("Could calculate error distances"),
+    })?;
 
     for i in 0..locs.len() {
+        debug!(
+            "FIXING LOCATION {} FROM {:08b} TO {:08b}",
+            block_info.total_per as usize - 1 - locs[i] as usize,
+            blocks[0][block_info.total_per as usize - 1 - locs[i] as usize],
+            blocks[0][block_info.total_per as usize - 1 - locs[i] as usize] ^ distance[i].0
+        );
         blocks[0][block_info.total_per as usize - 1 - locs[i] as usize] ^= distance[i].0;
     }
 
@@ -102,18 +81,69 @@ fn syndrome(block: &Vec<u8>, base: GF8) -> GF8 {
     synd
 }
 
-fn solve<T>(mut eq: Vec<Vec<T>>, zero: T) -> Vec<T>
+fn find_locs(block_info: &BlockInfo, syndromes: &Vec<GF8>) -> Result<Vec<usize>, QRError> {
+    let mut sigma: Option<Vec<GF8>> = None;
+
+    for z in (1..block_info.ec_cap as usize + 1).rev() {
+        let mut eq = vec![vec![GF8(0); z + 1]; z];
+        for i in 0..z {
+            for j in 0..z + 1 {
+                eq[i][j] = syndromes[i + j];
+            }
+        }
+
+        sigma = solve(eq, GF8(0), GF8(1));
+
+        if sigma.is_some() {
+            break;
+        }
+    }
+
+    let sigma = sigma.ok_or(QRError {
+        msg: String::from("Could not calculate SIGMA"),
+    })?;
+
+    let mut locs = vec![];
+
+    for i in 0..255 {
+        let x_orig = EXP8[i];
+
+        let mut x = x_orig;
+        let mut check_value = sigma[0];
+        for i in 1..sigma.len() {
+            check_value = check_value + x * sigma[i];
+            x = x * x_orig;
+        }
+        check_value = check_value + x;
+
+        if check_value == GF8(0) {
+            let loc = i as usize;
+
+            if loc < block_info.total_per as usize {
+                locs.push(loc);
+            }
+        }
+    }
+
+    debug!("LOCS {:?}", locs);
+
+    Ok(locs)
+}
+
+use std::fmt::Debug;
+
+fn solve<T>(mut eq: Vec<Vec<T>>, zero: T, one: T) -> Option<Vec<T>>
 where
-    T: Div<Output = T> + Mul<Output = T> + Sub<Output = T> + Copy,
+    T: Div<Output = T> + Mul<Output = T> + Sub<Output = T> + Copy + PartialEq + Debug,
 {
     let num_eq = eq.len() as usize;
     if num_eq == 0 {
-        return vec![];
+        return None;
     }
 
     let num_coeff = eq[0].len();
     if num_coeff == 0 {
-        return vec![];
+        return None;
     }
 
     for i in 0..num_eq {
@@ -131,6 +161,11 @@ where
                 eq[j][k] = eq[j][k] - (eq[j][i] * eq[i][k]);
             }
         }
+
+        // If the rank is too low, can't solve
+        if eq[i][num_coeff - 1] == one {
+            return None;
+        }
     }
 
     let mut solution = vec![zero; num_eq];
@@ -142,5 +177,5 @@ where
         }
     }
 
-    solution
+    Some(solution)
 }
