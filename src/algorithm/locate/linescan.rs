@@ -139,20 +139,26 @@ impl Locate<GrayImage> for LineScan {
 
         for candidate1 in 0..max_candidates {
             for candidate2 in candidate1 + 1..max_candidates {
-                if diff(
+                let diff1 = diff(
                     candidates[candidate1].module_size,
                     candidates[candidate2].module_size,
-                ) > 0.05
-                {
+                );
+
+                trace!("DIFF 1 {}", diff1);
+
+                if diff1 > 0.1 {
                     continue;
                 }
 
                 for candidate3 in candidate2 + 1..max_candidates {
-                    if diff(
+                    let diff2 = diff(
                         candidates[candidate1].module_size,
                         candidates[candidate3].module_size,
-                    ) > 0.05
-                    {
+                    );
+
+                    trace!("DIFF 2 {}", diff2);
+
+                    if diff2 > 0.1 {
                         continue;
                     }
 
