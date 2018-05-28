@@ -5,7 +5,7 @@ use qr::block_info;
 use qr::{QRData, QRError};
 
 pub trait Decode {
-    fn decode(&self, data: &Vec<QRData>) -> Vec<Result<String, QRError>>;
+    fn decode(&self, data: Vec<Result<QRData, QRError>>) -> Vec<Result<String, QRError>>;
 }
 
 pub struct QRDecoder {}
@@ -17,10 +17,17 @@ impl QRDecoder {
 }
 
 impl Decode for QRDecoder {
-    fn decode(&self, data: &Vec<QRData>) -> Vec<Result<String, QRError>> {
+    fn decode(&self, data: Vec<Result<QRData, QRError>>) -> Vec<Result<String, QRError>> {
         let mut result = vec![];
 
         'qr_data: for qr_data in data {
+            if qr_data.is_err() {
+                result.push(Err(qr_data.err().unwrap()));
+                continue;
+            }
+
+            let qr_data = qr_data.unwrap();
+
             let format = qr::format::format(&qr_data);
 
             if format.is_err() {

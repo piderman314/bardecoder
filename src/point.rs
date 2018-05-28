@@ -8,8 +8,8 @@ pub struct Point {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Delta {
-    dx: f64,
-    dy: f64,
+    pub dx: f64,
+    pub dy: f64,
 }
 
 impl Add<Delta> for Point {
@@ -41,6 +41,28 @@ impl Sub<Point> for Point {
         Delta {
             dx: self.x - other.x,
             dy: self.y - other.y,
+        }
+    }
+}
+
+impl Add<Delta> for Delta {
+    type Output = Delta;
+
+    fn add(self, delta: Delta) -> Delta {
+        Delta {
+            dx: self.dx + delta.dx,
+            dy: self.dy + delta.dy,
+        }
+    }
+}
+
+impl Sub<Delta> for Delta {
+    type Output = Delta;
+
+    fn sub(self, delta: Delta) -> Delta {
+        Delta {
+            dx: self.dx - delta.dx,
+            dy: self.dy - delta.dy,
         }
     }
 }

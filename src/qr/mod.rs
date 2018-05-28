@@ -121,7 +121,7 @@ pub fn block_info(version: u32, level: &ECLevel) -> Result<Vec<BlockInfo>, QRErr
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct QRError {
-    msg: String,
+    pub msg: String,
 }
 
 impl Error for QRError {

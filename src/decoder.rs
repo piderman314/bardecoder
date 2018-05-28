@@ -33,7 +33,7 @@ impl<S, G, T> Decoder<S, G, T> {
         }
 
         let extraction = self.extract.extract(&threshold, locations);
-        self.decode.decode(&extraction)
+        self.decode.decode(extraction)
     }
 }
 
