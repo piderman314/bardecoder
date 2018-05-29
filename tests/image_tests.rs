@@ -56,6 +56,14 @@ pub fn test_version4_example() {
 }
 
 #[test]
+pub fn test_needs_alignment() {
+    test_image(
+        "tests/images/needs_alignment.jpg",
+        vec![Ok(String::from("http://cblink.je/app-install-display-nl"))],
+    );
+}
+
+#[test]
 pub fn test_wikipedia_examples() {
     // Downloaded from https://en.wikipedia.org/wiki/QR_code
     test_image(

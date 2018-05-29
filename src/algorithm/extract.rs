@@ -43,19 +43,21 @@ impl Extract<GrayImage> for QRExtractor {
 
             let p = p.unwrap();
 
-            let mut start = loc.top_left - 3.0 * p.dx - 3.0 * p.ddx;
-            start = start - 3.0 * p.dy - 3.0 * p.ddy;
+            debug!("PERSPECTIVE {:?}", p);
 
-            let mut dx = p.dx - 2.0 * p.ddx;
-            let mut dy = p.dy - 2.0 * p.ddy;
+            let mut start = loc.top_left - 3.0 * p.dy - 3.0 * p.ddy;
+
+            debug!("START {:?}", start);
 
             let mut data = vec![];
 
             #[cfg(feature = "debug-images")]
             let mut img = DynamicImage::ImageLuma8(threshold.clone()).to_rgb();
 
+            let mut dy = p.dy - 3.0 * p.ddy;
+            let mut dx = p.dx - 3.0 * p.ddx;
             for _ in 0..size {
-                let mut line = start.clone();
+                let mut line = start.clone() - 3.0 * dx;
 
                 for _ in 0..size {
                     let x = line.x.round() as u32;
@@ -76,8 +78,8 @@ impl Extract<GrayImage> for QRExtractor {
 
                     data.push(pixel);
                     line = line + dx;
-                    dx = dx + p.ddx;
                 }
+                dx = dx + p.ddx;
 
                 start = start + dy;
                 dy = dy + p.ddy;
@@ -126,51 +128,55 @@ fn determine_perspective(
     }
 
     let mut est_alignment = Point {
-        x: (loc.top_right - 3.0 * dx).x,
-        y: (loc.bottom_left - 3.0 * dy).y,
+        x: (loc.top_right - 3.0 * dx + (size - 10) as f64 * dy).x,
+        y: (loc.bottom_left + (size - 10) as f64 * dx - 3.0 * dy).y,
     };
 
     let mut found = false;
 
-    'distance: for i in (0..8).rev() {
-        if i == 0 {
-            if is_alignment(threshold, est_alignment, dx, dy) {
-                found = true;
-                break 'distance;
+    'distance: for i in (0..4).rev() {
+        'scale: for j in -2..3 {
+            let scale = 1.0 + (j as f64 / 10.0);
+
+            if i == 0 {
+                if is_alignment(threshold, est_alignment, dx, dy, scale) {
+                    found = true;
+                    break 'distance;
+                }
+
+                continue 'scale;
             }
 
-            continue 'distance;
-        }
+            for x in -i..i + 1 {
+                let alignment = est_alignment + x as f64 / 2.0 * dx - i as f64 / 2.0 * dy;
+                if is_alignment(threshold, alignment, dx, dy, scale) {
+                    est_alignment = alignment;
+                    found = true;
+                    break 'distance;
+                }
 
-        for x in -i..i + 1 {
-            let alignment = est_alignment + x as f64 / 2.0 * dx - i as f64 / 2.0 * dy;
-            if is_alignment(threshold, alignment, dx, dy) {
-                est_alignment = alignment;
-                found = true;
-                break 'distance;
+                let alignment = est_alignment + x as f64 / 2.0 * dx + i as f64 / 2.0 * dy;
+                if is_alignment(threshold, alignment, dx, dy, scale) {
+                    est_alignment = alignment;
+                    found = true;
+                    break 'distance;
+                }
             }
 
-            let alignment = est_alignment + x as f64 / 2.0 * dx + i as f64 / 2.0 * dy;
-            if is_alignment(threshold, alignment, dx, dy) {
-                est_alignment = alignment;
-                found = true;
-                break 'distance;
-            }
-        }
+            for y in -i + 1..i {
+                let alignment = est_alignment - i as f64 / 2.0 * dx + y as f64 / 2.0 * dy;
+                if is_alignment(threshold, alignment, dx, dy, scale) {
+                    est_alignment = alignment;
+                    found = true;
+                    break 'distance;
+                }
 
-        for y in -i + 1..i {
-            let alignment = est_alignment - i as f64 / 2.0 * dx + y as f64 / 2.0 * dy;
-            if is_alignment(threshold, alignment, dx, dy) {
-                est_alignment = alignment;
-                found = true;
-                break 'distance;
-            }
-
-            let alignment = est_alignment + i as f64 / 2.0 * dx + y as f64 / 2.0 * dy;
-            if is_alignment(threshold, alignment, dx, dy) {
-                est_alignment = alignment;
-                found = true;
-                break 'distance;
+                let alignment = est_alignment + i as f64 / 2.0 * dx + y as f64 / 2.0 * dy;
+                if is_alignment(threshold, alignment, dx, dy, scale) {
+                    est_alignment = alignment;
+                    found = true;
+                    break 'distance;
+                }
             }
         }
     }
@@ -218,15 +224,56 @@ fn determine_perspective(
         }
     }
 
-    Ok(Perspective::new(
-        dx,
-        Delta { dx: 0.0, dy: 0.0 },
-        dy,
-        Delta { dx: 0.0, dy: 0.0 },
-    ))
+    let orig_estimate = Point {
+        x: (loc.top_right - 3.0 * dx + (size - 10) as f64 * dy).x,
+        y: (loc.bottom_left + (size - 10) as f64 * dx - 3.0 * dy).y,
+    };
+
+    debug!("ORIG EST {:?}, NEW EST {:?}", orig_estimate, est_alignment);
+
+    let mut delta = est_alignment - orig_estimate;
+
+    debug!("DELTA {:?}", delta);
+
+    delta = delta / ((size - 10) * (size - 10)) as f64;
+
+    Ok(Perspective::new(dx, delta, dy, Delta { dx: 0.0, dy: 0.0 }))
 }
 
-fn is_alignment(threshold: &GrayImage, p: Point, dx: Delta, dy: Delta) -> bool {
+fn is_alignment(threshold: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f64) -> bool {
+    let dx = scale * dx;
+    let dy = scale * dy;
+
+    #[cfg(feature = "debug-images")]
+    {
+        let mut img = DynamicImage::ImageLuma8(threshold.clone()).to_rgb();
+
+        for i in -2..3 {
+            for j in -2..3 {
+                let pp = p + i as f64 * dx + j as f64 * dy;
+                img.put_pixel(
+                    pp.x.round() as u32,
+                    pp.y.round() as u32,
+                    Rgb { data: [255, 0, 0] },
+                );
+            }
+        }
+
+        let mut tmp = temp_dir();
+        tmp.push("bardecoder-debug-images");
+
+        if let Ok(_) = create_dir_all(tmp.clone()) {
+            tmp.push(format!(
+                "alignment_p_{}_{}_dx_{}_{}_dy_{}_{}.png",
+                p.x, p.y, dx.dx, dx.dy, dy.dx, dy.dy
+            ));
+
+            if let Ok(_) = DynamicImage::ImageRgb8(img).save(tmp.clone()) {
+                debug!("Debug image with data pixels saved to {:?}", tmp);
+            }
+        }
+    }
+
     let top_left = p - 2.0 * dx - 2.0 * dy;
     if top_left.x < 0.0 || top_left.y < 0.0 {
         return false;
@@ -286,6 +333,7 @@ fn is_alignment(threshold: &GrayImage, p: Point, dx: Delta, dy: Delta) -> bool {
     threshold.get_pixel(p.x.round() as u32, p.y.round() as u32)[0] == 0
 }
 
+#[derive(Debug)]
 struct Perspective {
     dx: Delta,
     ddx: Delta,
