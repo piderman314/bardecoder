@@ -1,5 +1,4 @@
-use qr::format::ECLevel;
-use qr::{BlockInfo, QRData, QRError};
+use qr::{BlockInfo, QRError};
 
 use algorithm::decode::galois::{EXP8, GF8};
 
@@ -8,16 +7,18 @@ use std::ops::{Div, Mul, Sub};
 pub fn correct(mut block: Vec<u8>, block_info: &BlockInfo) -> Result<Vec<u8>, QRError> {
     let mut syndromes = vec![GF8(0); (block_info.ec_cap * 2) as usize];
 
-    syndromes[0] = syndrome(&block, EXP8[0]);
-
-    if syndromes[0] == GF8(0) {
-        // all fine, nothing to do
-        debug!("SYNDROME WAS ZERO, NO CORRECTION NEEDED");
-        return Ok(block);
+    let mut all_fine = true;
+    for i in 0..block_info.ec_cap * 2 {
+        syndromes[i as usize] = syndrome(&block, EXP8[i as usize]);
+        if syndromes[i as usize] != GF8(0) {
+            all_fine = false;
+        }
     }
 
-    for i in 1..block_info.ec_cap * 2 {
-        syndromes[i as usize] = syndrome(&block, EXP8[i as usize]);
+    if all_fine {
+        // all fine, nothing to do
+        debug!("ALL SYNDROMES WERE ZERO, NO CORRECTION NEEDED");
+        return Ok(block);
     }
 
     let locs = find_locs(block_info, &syndromes)?;
