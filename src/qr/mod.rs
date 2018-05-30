@@ -110,7 +110,7 @@ pub fn block_info(version: u32, level: &ECLevel) -> Result<Vec<BlockInfo>, QRErr
 
     let mut bi_unwound = vec![];
 
-    for bi in block_info.iter() {
+    for bi in &block_info {
         for _ in 0..bi.block_count {
             bi_unwound.push(bi.clone());
         }

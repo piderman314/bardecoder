@@ -2,7 +2,8 @@ use qr::block_info;
 use qr::format::{ECLevel, QRMask};
 use qr::{BlockInfo, QRData, QRError};
 
-pub fn blocks(data: &QRData, level: &ECLevel, mask: Box<QRMask>) -> Result<Vec<Vec<u8>>, QRError> {
+#[allow(borrowed_box)] // QRMask is a trait, unsure how to solve
+pub fn blocks(data: &QRData, level: &ECLevel, mask: &Box<QRMask>) -> Result<Vec<Vec<u8>>, QRError> {
     let bi = block_info(data.version, level)?;
     let mut codewords = Codewords::new(bi);
     let mut x = data.side - 1;
@@ -41,8 +42,8 @@ pub fn blocks(data: &QRData, level: &ECLevel, mask: Box<QRMask>) -> Result<Vec<V
         });
     }
 
-    for i in 0..blocks.len() {
-        debug!("BLOCK {}, CODEWORDS {}", i, blocks[i].len());
+    for (i, block) in blocks.iter().enumerate() {
+        debug!("BLOCK {}, CODEWORDS {}", i, block.len());
     }
 
     for i in 0..blocks.len() {
@@ -63,7 +64,7 @@ pub fn blocks(data: &QRData, level: &ECLevel, mask: Box<QRMask>) -> Result<Vec<V
 
 fn y_range(x: u32, side: u32) -> Box<Iterator<Item = u32>> {
     let x = if x < 6 { x + 1 } else { x };
-    if (x as i64 - side as i64 + 1) % 4 == 0 {
+    if (i64::from(x) - i64::from(side) + 1) % 4 == 0 {
         Box::new((0..side).rev())
     } else {
         Box::new(0..side)
@@ -183,7 +184,7 @@ impl Blocks {
         let mut blocks = vec![];
         let mut max_data_round: usize = 0;
 
-        for bi in block_info.iter() {
+        for bi in &block_info {
             if bi.data_per as usize > max_data_round {
                 max_data_round = bi.data_per as usize;
             }

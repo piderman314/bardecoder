@@ -37,7 +37,7 @@ impl Mul<GF8> for GF8 {
         let log_self = LOG8[self.0 as usize];
         let log_other = LOG8[other.0 as usize];
 
-        EXP8[((log_self as u16 + log_other as u16) % 255) as usize]
+        EXP8[((u16::from(log_self) + u16::from(log_other)) % 255) as usize]
     }
 }
 
@@ -48,7 +48,7 @@ impl Div<GF8> for GF8 {
     fn div(self, other: GF8) -> GF8 {
         let log_self = LOG8[self.0 as usize];
         let log_other = LOG8[other.0 as usize];
-        let mut diff = log_self as i16 - log_other as i16;
+        let mut diff = i16::from(log_self) - i16::from(log_other);
 
         diff = if diff < 0 { diff + 255 } else { diff };
 
@@ -89,7 +89,7 @@ impl Mul<GF4> for GF4 {
         let log_self = LOG4[self.0 as usize];
         let log_other = LOG4[other.0 as usize];
 
-        EXP4[((log_self as u16 + log_other as u16) % 15) as usize]
+        EXP4[((u16::from(log_self) + u16::from(log_other)) % 15) as usize]
     }
 }
 
@@ -100,7 +100,7 @@ impl Div<GF4> for GF4 {
     fn div(self, other: GF4) -> GF4 {
         let log_self = LOG4[self.0 as usize];
         let log_other = LOG4[other.0 as usize];
-        let mut diff = log_self as i16 - log_other as i16;
+        let mut diff = i16::from(log_self) - i16::from(log_other);
 
         diff = if diff < 0 { diff + 15 } else { diff };
 
@@ -254,7 +254,7 @@ let modulo: u16 = 0b100011101;
 let mut alpha: u16 = 1;
 for i in 0..255 {
     exp[i] = (alpha & 0xff) as u8;
-    log[alpha as usize] = i as u8;
+    log[alpha as usize] = u8::from(i);
 
     alpha *= 2;
     if alpha > 255 {

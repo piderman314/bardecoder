@@ -16,6 +16,7 @@ pub trait Extract<T> {
     fn extract(&self, threshold: &T, locs: Vec<QRLocation>) -> Vec<Result<QRData, QRError>>;
 }
 
+#[derive(Default)]
 pub struct QRExtractor {}
 
 impl QRExtractor {
@@ -57,7 +58,7 @@ impl Extract<GrayImage> for QRExtractor {
             let mut dy = p.dy - 3.0 * p.ddy;
             let mut dx = p.dx - 3.0 * p.ddx;
             for _ in 0..size {
-                let mut line = start.clone() - 3.0 * dx;
+                let mut line = start - 3.0 * dx;
 
                 for _ in 0..size {
                     let x = line.x.round() as u32;
@@ -113,10 +114,10 @@ fn determine_perspective(
     loc: &QRLocation,
 ) -> Result<Perspective, QRError> {
     let mut dx = loc.top_right - loc.top_left;
-    dx = dx / (size - 7) as f64;
+    dx = dx / f64::from(size - 7);
 
     let mut dy = loc.bottom_left - loc.top_left;
-    dy = dy / (size - 7) as f64;
+    dy = dy / f64::from(size - 7);
 
     if version == 1 {
         return Ok(Perspective::new(
@@ -128,15 +129,15 @@ fn determine_perspective(
     }
 
     let mut est_alignment = Point {
-        x: (loc.top_right - 3.0 * dx + (size - 10) as f64 * dy).x,
-        y: (loc.bottom_left + (size - 10) as f64 * dx - 3.0 * dy).y,
+        x: (loc.top_right - 3.0 * dx + f64::from(size - 10) * dy).x,
+        y: (loc.bottom_left + f64::from(size - 10) * dx - 3.0 * dy).y,
     };
 
     let mut found = false;
 
     'distance: for i in (0..4).rev() {
         'scale: for j in -2..3 {
-            let scale = 1.0 + (j as f64 / 10.0);
+            let scale = 1.0 + (f64::from(j) / 10.0);
 
             if i == 0 {
                 if is_alignment(threshold, est_alignment, dx, dy, scale) {
@@ -148,14 +149,14 @@ fn determine_perspective(
             }
 
             for x in -i..i + 1 {
-                let alignment = est_alignment + x as f64 / 2.0 * dx - i as f64 / 2.0 * dy;
+                let alignment = est_alignment + f64::from(x) / 2.0 * dx - f64::from(i) / 2.0 * dy;
                 if is_alignment(threshold, alignment, dx, dy, scale) {
                     est_alignment = alignment;
                     found = true;
                     break 'distance;
                 }
 
-                let alignment = est_alignment + x as f64 / 2.0 * dx + i as f64 / 2.0 * dy;
+                let alignment = est_alignment + f64::from(x) / 2.0 * dx + f64::from(i) / 2.0 * dy;
                 if is_alignment(threshold, alignment, dx, dy, scale) {
                     est_alignment = alignment;
                     found = true;
@@ -164,14 +165,14 @@ fn determine_perspective(
             }
 
             for y in -i + 1..i {
-                let alignment = est_alignment - i as f64 / 2.0 * dx + y as f64 / 2.0 * dy;
+                let alignment = est_alignment - f64::from(i) / 2.0 * dx + f64::from(y) / 2.0 * dy;
                 if is_alignment(threshold, alignment, dx, dy, scale) {
                     est_alignment = alignment;
                     found = true;
                     break 'distance;
                 }
 
-                let alignment = est_alignment + i as f64 / 2.0 * dx + y as f64 / 2.0 * dy;
+                let alignment = est_alignment + f64::from(i) / 2.0 * dx + f64::from(y) / 2.0 * dy;
                 if is_alignment(threshold, alignment, dx, dy, scale) {
                     est_alignment = alignment;
                     found = true;
@@ -225,8 +226,8 @@ fn determine_perspective(
     }
 
     let orig_estimate = Point {
-        x: (loc.top_right - 3.0 * dx + (size - 10) as f64 * dy).x,
-        y: (loc.bottom_left + (size - 10) as f64 * dx - 3.0 * dy).y,
+        x: (loc.top_right - 3.0 * dx + f64::from(size - 10) * dy).x,
+        y: (loc.bottom_left + f64::from(size - 10) * dx - 3.0 * dy).y,
     };
 
     debug!("ORIG EST {:?}, NEW EST {:?}", orig_estimate, est_alignment);
@@ -235,7 +236,7 @@ fn determine_perspective(
 
     debug!("DELTA {:?}", delta);
 
-    delta = delta / ((size - 10) * (size - 10)) as f64;
+    delta = delta / f64::from((size - 10) * (size - 10));
 
     Ok(Perspective::new(dx, delta, dy, Delta { dx: 0.0, dy: 0.0 }))
 }
@@ -250,7 +251,7 @@ fn is_alignment(threshold: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f6
 
         for i in -2..3 {
             for j in -2..3 {
-                let pp = p + i as f64 * dx + j as f64 * dy;
+                let pp = p + f64::from(i) * dx + f64::from(j) * dy;
                 img.put_pixel(
                     pp.x.round() as u32,
                     pp.y.round() as u32,
@@ -281,40 +282,40 @@ fn is_alignment(threshold: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f6
 
     let bottom_right = p + 2.0 * dx + 2.0 * dy;
     let dims = threshold.dimensions();
-    if bottom_right.x > dims.0 as f64 || bottom_right.y > dims.1 as f64 {
+    if bottom_right.x > f64::from(dims.0) || bottom_right.y > f64::from(dims.1) {
         return false;
     }
 
     for x in -2..2 {
-        let twice_up = p - x as f64 * dx - 2.0 * dy;
+        let twice_up = p - f64::from(x) * dx - 2.0 * dy;
         if threshold.get_pixel(twice_up.x.round() as u32, twice_up.y.round() as u32)[0] == 255 {
             return false;
         }
 
-        let twice_down = p - x as f64 * dx + 2.0 * dy;
+        let twice_down = p - f64::from(x) * dx + 2.0 * dy;
         if threshold.get_pixel(twice_down.x.round() as u32, twice_down.y.round() as u32)[0] == 255 {
             return false;
         }
     }
 
     for y in -1..1 {
-        let twice_left = p - 2.0 * dx - y as f64 * dy;
+        let twice_left = p - 2.0 * dx - f64::from(y) * dy;
         if threshold.get_pixel(twice_left.x.round() as u32, twice_left.y.round() as u32)[0] == 255 {
             return false;
         }
 
-        let twice_right = p + 2.0 * dx - y as f64 * dy;
+        let twice_right = p + 2.0 * dx - f64::from(y) * dy;
         if threshold.get_pixel(twice_right.x.round() as u32, twice_right.y.round() as u32)[0] == 255
         {
             return false;
         }
 
-        let left = p - dx - y as f64 * dy;
+        let left = p - dx - f64::from(y) * dy;
         if threshold.get_pixel(left.x.round() as u32, left.y.round() as u32)[0] == 0 {
             return false;
         }
 
-        let right = p - dx - y as f64 * dy;
+        let right = p - dx - f64::from(y) * dy;
         if threshold.get_pixel(right.x.round() as u32, right.y.round() as u32)[0] == 0 {
             return false;
         }

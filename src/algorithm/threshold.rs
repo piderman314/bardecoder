@@ -27,9 +27,9 @@ impl Threshold<GrayImage, GrayImage> for BlockedMean {
         let height = dimensions.1;
 
         let block_map = self.as_block_map(&grayscale, width, height);
-        let block_mean_map = self.to_block_mean_map(block_map, width, height);
+        let block_mean_map = self.to_block_mean_map(&block_map, width, height);
 
-        self.to_threshold(grayscale, block_mean_map, width, height)
+        self.to_threshold(grayscale, &block_mean_map, width, height)
     }
 }
 
@@ -50,20 +50,20 @@ impl BlockedMean {
             let coords = as_block_coords(x, y, self.block_size);
             let idx: usize = (coords.1 * (block_width + 1) + coords.0) as usize;
 
-            let mut stats = blocks.get_mut(idx).unwrap();
+            let mut stats = &mut blocks[idx];
 
-            stats.total += p.data[0] as u64;
+            stats.total += u64::from(p.data[0]);
             stats.count += 1;
         }
 
-        for mut stat in blocks.iter_mut() {
+        for mut stat in &mut blocks {
             stat.mean = stat.total as f64 / stat.count as f64;
         }
 
         blocks
     }
 
-    fn to_block_mean_map(&self, blocks: Vec<Stats>, width: u32, height: u32) -> Vec<Stats> {
+    fn to_block_mean_map(&self, blocks: &[Stats], width: u32, height: u32) -> Vec<Stats> {
         let block_stride = (self.block_mean_size - 1) / 2;
         let (block_width, block_height) = as_block_coords(width, height, self.block_size);
 
@@ -89,14 +89,14 @@ impl BlockedMean {
                 for x in x_start..x_end {
                     for y in y_start..y_end {
                         let idx: usize = (y * (block_width + 1) + x) as usize;
-                        let mut stats = blocks.get(idx).unwrap();
+                        let mut stats = &blocks[idx];
                         total += stats.total;
                         count += stats.count;
                     }
                 }
 
                 let idx: usize = (block_y * (block_width + 1) + block_x) as usize;
-                block_means.get_mut(idx).unwrap().mean = total as f64 / count as f64;
+                block_means[idx].mean = total as f64 / count as f64;
             }
         }
 
@@ -106,7 +106,7 @@ impl BlockedMean {
     fn to_threshold(
         &self,
         mut grayscale: GrayImage,
-        block_means: Vec<Stats>,
+        block_means: &[Stats],
         width: u32,
         height: u32,
     ) -> GrayImage {
@@ -118,7 +118,7 @@ impl BlockedMean {
 
             let mean = block_means[idx].mean;
 
-            p.data[0] = if p.data[0] as f64 > mean { 255 } else { 0 };
+            p.data[0] = if f64::from(p.data[0]) > mean { 255 } else { 0 };
         }
 
         grayscale

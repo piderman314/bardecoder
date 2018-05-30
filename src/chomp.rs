@@ -32,11 +32,11 @@ impl Chomp {
 
         let mut result: u16 = 0;
         while bits > 8 {
-            result = (self.chomp(8).ok_or(err.clone())? as u16) << (bits - 8);
+            result = u16::from(self.chomp(8).ok_or_else(|| err.clone())?) << (bits - 8);
             bits -= 8;
         }
 
-        result += self.chomp(bits).ok_or(err.clone())? as u16;
+        result += u16::from(self.chomp(bits).ok_or_else(|| err.clone())?);
 
         Ok(result)
     }
@@ -70,10 +70,7 @@ impl Chomp {
 
             self.bits_left -= self.bits_left_in_byte as usize;
 
-            if let None = self.bytes.peek() {
-                // calculations were off?
-                return None;
-            }
+            self.bytes.peek()?;
 
             self.current_byte = self.bytes.next();
             self.bits_left_in_byte = 8;

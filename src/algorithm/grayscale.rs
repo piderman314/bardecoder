@@ -5,6 +5,7 @@ pub trait Grayscale<S, G> {
     fn to_grayscale(&self, source: &S) -> G;
 }
 
+#[derive(Default)]
 pub struct ToLuma {}
 
 impl ToLuma {

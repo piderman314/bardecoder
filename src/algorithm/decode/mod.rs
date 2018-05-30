@@ -8,6 +8,7 @@ pub trait Decode {
     fn decode(&self, data: Vec<Result<QRData, QRError>>) -> Vec<Result<String, QRError>>;
 }
 
+#[derive(Default)]
 pub struct QRDecoder {}
 
 impl QRDecoder {
@@ -37,7 +38,7 @@ impl Decode for QRDecoder {
 
             let format = format.unwrap();
 
-            let blocks = qr::blocks::blocks(&qr_data, &format.0, format.1);
+            let blocks = qr::blocks::blocks(&qr_data, &format.0, &format.1);
 
             if blocks.is_err() {
                 result.push(Err(blocks.err().unwrap()));
@@ -69,8 +70,8 @@ impl Decode for QRDecoder {
 
                 let mut corrected = corrected.unwrap();
 
-                for i in 0..block_info[b].data_per as usize {
-                    all_blocks.push(corrected[i]);
+                for corr in corrected.iter().take(block_info[b].data_per as usize) {
+                    all_blocks.push(*corr);
                 }
 
                 b += 1;

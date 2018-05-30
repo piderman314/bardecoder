@@ -6,21 +6,17 @@ pub fn data(input: Vec<u8>, version: u32) -> Result<String, QRError> {
     let mut chomp = Chomp::new(input);
     let mut result = String::new();
 
-    loop {
-        if let Some(mode) = chomp.chomp(4) {
-            match mode {
-                0b0001 => result.push_str(numeric(&mut chomp, version)?.as_str()),
-                0b0010 => result.push_str(alphanumeric(&mut chomp, version)?.as_str()),
-                0b0100 => result.push_str(eight_bit(&mut chomp, version)?.as_str()),
-                0b0000 => break,
-                _ => {
-                    return Err(QRError {
-                        msg: format!("Mode {:04b} not yet implemented.", mode),
-                    })
-                }
+    while let Some(mode) = chomp.chomp(4) {
+        match mode {
+            0b0001 => result.push_str(numeric(&mut chomp, version)?.as_str()),
+            0b0010 => result.push_str(alphanumeric(&mut chomp, version)?.as_str()),
+            0b0100 => result.push_str(eight_bit(&mut chomp, version)?.as_str()),
+            0b0000 => break,
+            _ => {
+                return Err(QRError {
+                    msg: format!("Mode {:04b} not yet implemented.", mode),
+                })
             }
-        } else {
-            break;
         }
     }
 
@@ -29,7 +25,7 @@ pub fn data(input: Vec<u8>, version: u32) -> Result<String, QRError> {
 
 fn numeric(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
     let length_bits = match version {
-        01...09 => 10,
+        1...9 => 10,
         10...26 => 12,
         27...40 => 14,
         _ => {
@@ -85,7 +81,7 @@ const ALPHANUMERIC: [char; 45] = [
 
 fn alphanumeric(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
     let length_bits = match version {
-        01...09 => 09,
+        1...9 => 9,
         10...26 => 11,
         27...40 => 13,
         _ => {
@@ -132,7 +128,7 @@ fn alphanumeric(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
 
 fn eight_bit(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
     let length_bits = match version {
-        01...09 => 08,
+        1...9 => 8,
         10...26 => 16,
         27...40 => 16,
         _ => {

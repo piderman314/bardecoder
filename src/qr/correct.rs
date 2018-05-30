@@ -57,7 +57,7 @@ pub fn correct(mut block: Vec<u8>, block_info: &BlockInfo) -> Result<Vec<u8>, QR
     Ok(block)
 }
 
-fn syndrome(block: &Vec<u8>, base: GF8) -> GF8 {
+fn syndrome(block: &[u8], base: GF8) -> GF8 {
     let mut synd = GF8(0);
     let mut alpha = GF8(1);
 
@@ -70,15 +70,13 @@ fn syndrome(block: &Vec<u8>, base: GF8) -> GF8 {
     synd
 }
 
-fn find_locs(block_info: &BlockInfo, syndromes: &Vec<GF8>) -> Result<Vec<usize>, QRError> {
+fn find_locs(block_info: &BlockInfo, syndromes: &[GF8]) -> Result<Vec<usize>, QRError> {
     let mut sigma: Option<Vec<GF8>> = None;
 
     for z in (1..block_info.ec_cap as usize + 1).rev() {
         let mut eq = vec![vec![GF8(0); z + 1]; z];
         for i in 0..z {
-            for j in 0..z + 1 {
-                eq[i][j] = syndromes[i + j];
-            }
+            eq[i][..z + 1].clone_from_slice(&syndromes[i..(z + 1 + i)]);
         }
 
         sigma = solve(eq, GF8(0), GF8(1), true);
@@ -94,23 +92,17 @@ fn find_locs(block_info: &BlockInfo, syndromes: &Vec<GF8>) -> Result<Vec<usize>,
 
     let mut locs = vec![];
 
-    for i in 0..255 {
-        let x_orig = EXP8[i];
-
-        let mut x = x_orig;
+    for (i, exp) in EXP8.iter().enumerate().take(block_info.total_per as usize) {
+        let mut x = *exp;
         let mut check_value = sigma[0];
-        for i in 1..sigma.len() {
-            check_value = check_value + x * sigma[i];
-            x = x * x_orig;
+        for s in sigma.iter().skip(1) {
+            check_value = check_value + x * *s;
+            x = x * *exp;
         }
         check_value = check_value + x;
 
         if check_value == GF8(0) {
-            let loc = i as usize;
-
-            if loc < block_info.total_per as usize {
-                locs.push(loc);
-            }
+            locs.push(i);
         }
     }
 

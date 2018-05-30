@@ -16,7 +16,7 @@ pub type QRMask = Fn(&QRData, u32, u32) -> u8;
 pub fn format(data: &QRData) -> Result<(ECLevel, Box<QRMask>), QRError> {
     let mut format = format1(data);
 
-    if let Err(_) = format {
+    if format.is_err() {
         format = format2(data);
     }
 

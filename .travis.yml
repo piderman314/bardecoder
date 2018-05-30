@@ -19,7 +19,7 @@ matrix:
       before_script:
         - cargo install clippy --version $CLIPPY_VERSION || echo "clippy already installed"
       script:
-        - cargo clippy
+        - cargo clippy -- -D clippy
     - env: NAME='cargo-coveralls'
       sudo: required
       before_script:

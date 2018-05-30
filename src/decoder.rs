@@ -28,7 +28,7 @@ impl<S, G, T> Decoder<S, G, T> {
         let threshold = self.threshold.to_threshold(grayscale);
         let locations = self.locate.locate(&threshold);
 
-        if locations.len() == 0 {
+        if locations.is_empty() {
             return vec![];
         }
 
@@ -61,6 +61,7 @@ pub fn default_decoder() -> Decoder<DynamicImage, GrayImage, GrayImage> {
 /// * Locate
 /// * Extract
 /// * Decode
+#[derive(Default)]
 pub struct DecoderBuilder<S, G, T> {
     grayscale: Option<Box<Grayscale<S, G>>>,
     threshold: Option<Box<Threshold<G, T>>>,
@@ -69,6 +70,7 @@ pub struct DecoderBuilder<S, G, T> {
     decode: Option<Box<Decode>>,
 }
 
+#[allow(new_without_default_derive)] // not sure why clippy is complaining about it here
 impl<S, G, T> DecoderBuilder<S, G, T> {
     /// Constructor; all fields initialized as None
     pub fn new() -> DecoderBuilder<S, G, T> {

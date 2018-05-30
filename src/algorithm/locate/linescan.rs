@@ -12,6 +12,7 @@ use image::{DynamicImage, Rgb};
 #[cfg(feature = "debug-images")]
 use std::{env::temp_dir, fs::create_dir_all};
 
+#[derive(Default)]
 pub struct LineScan {}
 
 impl LineScan {
@@ -56,8 +57,8 @@ impl Locate<GrayImage> for LineScan {
             let mut module_size = pattern.est_mod_size();
 
             let mut finder = Point {
-                x: x as f64 - module_size * 3.5,
-                y: y as f64,
+                x: f64::from(x) - module_size * 3.5,
+                y: f64::from(y),
             };
 
             for candidate in &candidates {
@@ -69,7 +70,7 @@ impl Locate<GrayImage> for LineScan {
                 }
             }
 
-            for (refine_func, dx, dy) in refine_func.iter() {
+            for (refine_func, dx, dy) in &refine_func {
                 let vert = refine_func(&self, threshold, &finder, module_size);
 
                 if vert.is_none() {
@@ -269,18 +270,16 @@ impl LineScan {
             if p == last_pixel {
                 pattern.6 += 1;
             } else {
-                if pattern.looks_like_finder() {
-                    if diff(module_size, pattern.est_mod_size()) < 0.2 {
-                        let new_est_mod_size = (module_size + pattern.est_mod_size()) / 2.0;
-                        return Some(QRFinderPosition {
-                            location: Point {
-                                x: x as f64,
-                                y: y as f64,
-                            },
-                            module_size: new_est_mod_size,
-                            last_module_size: pattern.est_mod_size(),
-                        });
-                    }
+                if pattern.looks_like_finder() && diff(module_size, pattern.est_mod_size()) < 0.2 {
+                    let new_est_mod_size = (module_size + pattern.est_mod_size()) / 2.0;
+                    return Some(QRFinderPosition {
+                        location: Point {
+                            x: f64::from(x),
+                            y: f64::from(y),
+                        },
+                        module_size: new_est_mod_size,
+                        last_module_size: pattern.est_mod_size(),
+                    });
                 }
 
                 last_pixel = p;
@@ -291,18 +290,16 @@ impl LineScan {
             last_y = y;
         }
 
-        if pattern.looks_like_finder() {
-            if diff(module_size, pattern.est_mod_size()) < 0.2 {
-                let new_est_mod_size = (module_size + pattern.est_mod_size()) / 2.0;
-                return Some(QRFinderPosition {
-                    location: Point {
-                        x: last_x as f64,
-                        y: last_y as f64,
-                    },
-                    module_size: new_est_mod_size,
-                    last_module_size: pattern.est_mod_size(),
-                });
-            }
+        if pattern.looks_like_finder() && diff(module_size, pattern.est_mod_size()) < 0.2 {
+            let new_est_mod_size = (module_size + pattern.est_mod_size()) / 2.0;
+            return Some(QRFinderPosition {
+                location: Point {
+                    x: f64::from(last_x),
+                    y: f64::from(last_y),
+                },
+                module_size: new_est_mod_size,
+                last_module_size: pattern.est_mod_size(),
+            });
         }
 
         None
@@ -318,7 +315,7 @@ impl QRFinderPattern {
     }
 
     fn slide(&mut self) {
-        if (self.6 as f64) < self.5 as f64 / 10.0 {
+        if f64::from(self.6) < f64::from(self.5) / 10.0 {
             self.6 += self.5;
             self.5 = self.4;
             self.4 = self.3;
@@ -338,7 +335,7 @@ impl QRFinderPattern {
     }
 
     fn est_mod_size(&self) -> f64 {
-        (self.2 + self.3 + self.4 + self.5 + self.6) as f64 / 7.0
+        f64::from(self.2 + self.3 + self.4 + self.5 + self.6) / 7.0
     }
 
     fn looks_like_finder(&self) -> bool {
@@ -348,26 +345,26 @@ impl QRFinderPattern {
             return false;
         }
 
-        let module_size: f64 = total_size as f64 / 7.0;
-        let max_variance = module_size as f64 / 1.5;
+        let module_size: f64 = f64::from(total_size) / 7.0;
+        let max_variance = module_size / 1.5;
 
-        if (module_size - self.2 as f64).abs() > max_variance {
+        if (module_size - f64::from(self.2)).abs() > max_variance {
             return false;
         }
 
-        if (module_size - self.3 as f64).abs() > max_variance {
+        if (module_size - f64::from(self.3)).abs() > max_variance {
             return false;
         }
 
-        if (module_size * 3.0 - self.4 as f64).abs() > max_variance {
+        if (module_size * 3.0 - f64::from(self.4)).abs() > max_variance {
             return false;
         }
 
-        if (module_size - self.5 as f64).abs() > max_variance {
+        if (module_size - f64::from(self.5)).abs() > max_variance {
             return false;
         }
 
-        if (module_size - self.6 as f64).abs() > max_variance {
+        if (module_size - f64::from(self.6)).abs() > max_variance {
             return false;
         }
 
@@ -451,17 +448,17 @@ fn find_qr_internal(
 
     if perpendicular > 0.0 {
         Some(QRLocation {
-            top_left: one.clone(),
-            top_right: three.clone(),
-            bottom_left: two.clone(),
+            top_left: *one,
+            top_right: *three,
+            bottom_left: *two,
             module_size,
             version: (dist - 17) / 4,
         })
     } else {
         Some(QRLocation {
-            top_left: one.clone(),
-            top_right: two.clone(),
-            bottom_left: three.clone(),
+            top_left: *one,
+            top_right: *two,
+            bottom_left: *three,
             module_size,
             version: (dist - 17) / 4,
         })
