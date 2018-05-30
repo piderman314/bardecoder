@@ -1,11 +1,14 @@
 use std::ops::{Add, Div, Mul, Sub};
 
+// Allow suspicious_arithmetic_impl because this is descrete math
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct GF8(pub u8);
 
 impl Add<GF8> for GF8 {
     type Output = GF8;
 
+    #[allow(suspicious_arithmetic_impl)]
     fn add(self, other: GF8) -> GF8 {
         let sum = self.0 ^ other.0;
         GF8(sum)
@@ -15,6 +18,7 @@ impl Add<GF8> for GF8 {
 impl Sub<GF8> for GF8 {
     type Output = GF8;
 
+    #[allow(suspicious_arithmetic_impl)]
     fn sub(self, other: GF8) -> GF8 {
         let diff = self.0 ^ other.0;
         GF8(diff)
@@ -24,6 +28,7 @@ impl Sub<GF8> for GF8 {
 impl Mul<GF8> for GF8 {
     type Output = GF8;
 
+    #[allow(suspicious_arithmetic_impl)]
     fn mul(self, other: GF8) -> GF8 {
         if self.0 == 0 || other.0 == 0 {
             return EXP8[255];
@@ -39,6 +44,7 @@ impl Mul<GF8> for GF8 {
 impl Div<GF8> for GF8 {
     type Output = GF8;
 
+    #[allow(suspicious_arithmetic_impl)]
     fn div(self, other: GF8) -> GF8 {
         let log_self = LOG8[self.0 as usize];
         let log_other = LOG8[other.0 as usize];
@@ -56,6 +62,7 @@ pub struct GF4(pub u8);
 impl Add<GF4> for GF4 {
     type Output = GF4;
 
+    #[allow(suspicious_arithmetic_impl)]
     fn add(self, other: GF4) -> GF4 {
         GF4(self.0 ^ other.0)
     }
@@ -64,6 +71,7 @@ impl Add<GF4> for GF4 {
 impl Sub<GF4> for GF4 {
     type Output = GF4;
 
+    #[allow(suspicious_arithmetic_impl)]
     fn sub(self, other: GF4) -> GF4 {
         GF4(self.0 ^ other.0)
     }
@@ -72,6 +80,7 @@ impl Sub<GF4> for GF4 {
 impl Mul<GF4> for GF4 {
     type Output = GF4;
 
+    #[allow(suspicious_arithmetic_impl)]
     fn mul(self, other: GF4) -> GF4 {
         if self.0 == 0 || other.0 == 0 {
             return EXP4[15];
@@ -87,6 +96,7 @@ impl Mul<GF4> for GF4 {
 impl Div<GF4> for GF4 {
     type Output = GF4;
 
+    #[allow(suspicious_arithmetic_impl)]
     fn div(self, other: GF4) -> GF4 {
         let log_self = LOG4[self.0 as usize];
         let log_other = LOG4[other.0 as usize];
