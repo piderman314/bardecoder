@@ -1,4 +1,6 @@
 language: rust
+cache: cargo
+env:
 rust:
   - stable
   - beta
@@ -7,9 +9,35 @@ script:
   - cargo test --verbose
   - cargo check --features "debug-images"
 matrix:
-  allow_failures:
-    - rust: nightly
   fast_finish: true
+  allow_failures:
+    - env: NAME='cargo-coveralls'
+  include:
+    - rust: nightly-2018-05-29
+      env:
+        - CLIPPY_VERSION=0.0.206
+      before_script:
+        - cargo install clippy --version $CLIPPY_VERSION || echo "clippy already installed"
+      script:
+        - cargo clippy
+    - env: NAME='cargo-coveralls'
+      sudo: required
+      before_script:
+        - cargo install cargo-update || echo "cargo-update already installed"
+        - cargo install cargo-travis || echo "cargo-travis already installed"
+        - cargo install-update -a
+      script:
+        - |
+          cargo build --verbose &&
+          cargo coveralls --verbose
+      addons:
+        apt:
+          packages:
+            - libcurl4-openssl-dev
+            - libelf-dev
+            - libdw-dev
+            - binutils-dev
+            - cmake
 
 notifications:
   email: false
