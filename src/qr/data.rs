@@ -60,7 +60,7 @@ fn numeric(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
             break;
         }
 
-        if length == 2 {
+        if length == 1 {
             let digits = read_bits_u16(chomp, 4)?;
             result.push_str(&format!("{:01}", digits));
 
