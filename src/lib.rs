@@ -1,3 +1,5 @@
+#![allow(unknown_lints)]
+
 extern crate image;
 
 #[macro_use]
