@@ -11,7 +11,8 @@ mod decoder;
 pub mod point;
 pub mod qr;
 
-mod prepare;
+pub mod detect;
+pub mod prepare;
 
 pub use decoder::{default_builder, default_decoder};
 pub use decoder::{Decoder, DecoderBuilder};

@@ -1,6 +1,8 @@
-use super::*;
-
+use super::{Detect, QRLocation};
+use point::Point;
 use qr::QRFinderPosition;
+
+use image::GrayImage;
 
 use std::cmp::{max, min};
 use std::iter::repeat;
@@ -23,8 +25,8 @@ impl LineScan {
 
 type Refine = Fn(&LineScan, &GrayImage, &Point, f64) -> Option<QRFinderPosition>;
 
-impl Locate<GrayImage> for LineScan {
-    fn locate(&self, threshold: &GrayImage) -> Vec<QRLocation> {
+impl Detect<GrayImage> for LineScan {
+    fn detect(&self, threshold: &GrayImage) -> Vec<QRLocation> {
         // The order of refinement is important.
         // The candidate is found in horizontal direction, so the first refinement is vertical
         let refine_func: Vec<(Box<Refine>, f64, f64)> = vec![

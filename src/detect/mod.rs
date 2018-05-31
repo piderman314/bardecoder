@@ -1,10 +1,7 @@
-use point::Point;
 use qr::QRLocation;
 
-use image::GrayImage;
-
-pub trait Locate<T> {
-    fn locate(&self, threshold: &T) -> Vec<QRLocation>;
+pub trait Detect<T> {
+    fn detect(&self, threshold: &T) -> Vec<QRLocation>;
 }
 
 mod linescan;
