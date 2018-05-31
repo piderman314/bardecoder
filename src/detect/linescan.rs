@@ -1,12 +1,13 @@
-use super::{Detect, QRLocation};
-use point::Point;
-use qr::QRFinderPosition;
-
-use image::GrayImage;
+use super::Detect;
 
 use std::cmp::{max, min};
 use std::iter::repeat;
 use std::iter::Iterator;
+
+use util::qr::QRLocation;
+use util::Point;
+
+use image::GrayImage;
 
 #[cfg(feature = "debug-images")]
 use image::{DynamicImage, Rgb};
@@ -465,4 +466,11 @@ fn find_qr_internal(
             version: (dist - 17) / 4,
         })
     }
+}
+
+#[derive(Debug)]
+pub struct QRFinderPosition {
+    pub location: Point,
+    pub module_size: f64,
+    pub last_module_size: f64,
 }

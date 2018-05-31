@@ -1,12 +1,6 @@
-pub mod galois;
+use super::super::Decode;
 
-use qr;
-use qr::block_info;
-use qr::{QRData, QRError};
-
-pub trait Decode {
-    fn decode(&self, data: Vec<Result<QRData, QRError>>) -> Vec<Result<String, QRError>>;
-}
+use util::qr::{QRData, QRError};
 
 #[derive(Default)]
 pub struct QRDecoder {}
@@ -29,7 +23,7 @@ impl Decode for QRDecoder {
 
             let qr_data = qr_data.unwrap();
 
-            let format = qr::format::format(&qr_data);
+            let format = super::format::format(&qr_data);
 
             if format.is_err() {
                 result.push(Err(format.err().unwrap()));
@@ -38,7 +32,7 @@ impl Decode for QRDecoder {
 
             let format = format.unwrap();
 
-            let blocks = qr::blocks::blocks(&qr_data, &format.0, &format.1);
+            let blocks = super::blocks::blocks(&qr_data, &format.0, &format.1);
 
             if blocks.is_err() {
                 result.push(Err(blocks.err().unwrap()));
@@ -47,7 +41,7 @@ impl Decode for QRDecoder {
 
             let mut blocks = blocks.unwrap();
 
-            let block_info = block_info(qr_data.version, &format.0);
+            let block_info = super::block_info(qr_data.version, &format.0);
             if block_info.is_err() {
                 result.push(Err(block_info.err().unwrap()));
                 continue;
@@ -59,7 +53,7 @@ impl Decode for QRDecoder {
 
             let mut b = 0;
             for block in blocks {
-                let corrected = qr::correct::correct(block, &block_info[b]);
+                let corrected = super::correct::correct(block, &block_info[b]);
 
                 if corrected.is_err() {
                     result.push(Err(corrected.err().unwrap()));
@@ -80,7 +74,7 @@ impl Decode for QRDecoder {
             debug!("TOTAL LENGTH {}", all_blocks.len());
 
             let mut output = String::new();
-            let data = qr::data::data(all_blocks, qr_data.version);
+            let data = super::data::data(all_blocks, qr_data.version);
 
             if data.is_err() {
                 result.push(Err(data.err().unwrap()));

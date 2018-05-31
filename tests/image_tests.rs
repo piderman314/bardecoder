@@ -1,7 +1,7 @@
 extern crate bardecoder;
 extern crate image;
 
-use bardecoder::qr::QRError;
+use bardecoder::util::qr::QRError;
 
 #[test]
 pub fn test_version1_example() {

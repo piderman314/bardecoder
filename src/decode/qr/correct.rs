@@ -1,6 +1,7 @@
-use qr::{BlockInfo, QRError};
+use super::galois::{EXP8, GF8};
+use super::BlockInfo;
 
-use algorithm::decode::galois::{EXP8, GF8};
+use util::qr::QRError;
 
 use std::ops::{Div, Mul, Sub};
 

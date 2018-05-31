@@ -1,6 +1,5 @@
-use chomp::Chomp;
-
-use qr::QRError;
+use util::qr::QRError;
+use util::Chomp;
 
 pub fn data(input: Vec<u8>, version: u32) -> Result<String, QRError> {
     let mut chomp = Chomp::new(input);

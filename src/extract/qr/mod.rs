@@ -1,6 +1,7 @@
-use qr::{QRData, QRError, QRLocation};
+use super::Extract;
 
-use point::{Delta, Point};
+use util::qr::{QRData, QRError, QRLocation};
+use util::{Delta, Point};
 
 use image::GrayImage;
 
@@ -11,10 +12,6 @@ use image::{DynamicImage, Rgb};
 use std::{
     cmp::{max, min}, env::temp_dir, fs::create_dir_all,
 };
-
-pub trait Extract<T> {
-    fn extract(&self, threshold: &T, locs: Vec<QRLocation>) -> Vec<Result<QRData, QRError>>;
-}
 
 #[derive(Default)]
 pub struct QRExtractor {}

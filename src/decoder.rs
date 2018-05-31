@@ -1,16 +1,16 @@
 use image::DynamicImage;
 use image::GrayImage;
 
-use algorithm::decode::Decode;
-use algorithm::decode::QRDecoder;
-use algorithm::extract::Extract;
-use algorithm::extract::QRExtractor;
+use decode::Decode;
+use decode::QRDecoder;
 use detect::Detect;
 use detect::LineScan;
+use extract::Extract;
+use extract::QRExtractor;
 use prepare::BlockedMean;
 use prepare::Prepare;
 
-use qr::QRError;
+use util::qr::QRError;
 
 pub struct Decoder<IMG, PREPD> {
     prepare: Box<Prepare<IMG, PREPD>>,

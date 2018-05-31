@@ -1,6 +1,7 @@
-use qr::block_info;
-use qr::format::{ECLevel, QRMask};
-use qr::{BlockInfo, QRData, QRError};
+use super::block_info;
+use super::{BlockInfo, ECLevel, QRMask};
+
+use util::qr::{QRData, QRError};
 
 #[allow(borrowed_box)] // QRMask is a trait, unsure how to solve
 pub fn blocks(data: &QRData, level: &ECLevel, mask: &Box<QRMask>) -> Result<Vec<Vec<u8>>, QRError> {

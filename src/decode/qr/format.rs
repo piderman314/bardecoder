@@ -1,17 +1,9 @@
-use algorithm::decode::galois::{EXP4, GF4, LOG4};
-use qr::{QRData, QRError};
+use super::galois::{EXP4, GF4, LOG4};
+use super::{ECLevel, QRMask};
+
+use util::qr::{QRData, QRError};
 
 const MASK: [u8; 15] = [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0];
-
-#[derive(Debug)]
-pub enum ECLevel {
-    LOW,
-    MEDIUM,
-    QUARTILE,
-    HIGH,
-}
-
-pub type QRMask = Fn(&QRData, u32, u32) -> u8;
 
 pub fn format(data: &QRData) -> Result<(ECLevel, Box<QRMask>), QRError> {
     let mut format = format1(data);

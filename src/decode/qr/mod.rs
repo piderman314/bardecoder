@@ -1,61 +1,21 @@
-use std::error::Error;
-use std::fmt;
-use std::ops::Index;
-
-use point::Point;
-
-use self::format::ECLevel;
+use util::qr::{QRData, QRError};
 
 pub mod blocks;
 pub mod correct;
 pub mod data;
+pub mod decoder;
 pub mod format;
+pub mod galois;
 
 #[derive(Debug)]
-pub struct QRData {
-    pub data: Vec<u8>,
-    pub version: u32,
-    pub side: u32,
+pub enum ECLevel {
+    LOW,
+    MEDIUM,
+    QUARTILE,
+    HIGH,
 }
 
-impl QRData {
-    pub fn new(data: Vec<u8>, version: u32) -> QRData {
-        QRData {
-            data,
-            version,
-            side: 4 * version + 17,
-        }
-    }
-}
-
-impl Index<[u32; 2]> for QRData {
-    type Output = u8;
-
-    fn index(&self, index: [u32; 2]) -> &u8 {
-        let pixel = self.data[index[1] as usize * self.side as usize + index[0] as usize];
-        if pixel == 0 {
-            &1
-        } else {
-            &0
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct QRLocation {
-    pub top_left: Point,
-    pub top_right: Point,
-    pub bottom_left: Point,
-    pub module_size: f64,
-    pub version: u32,
-}
-
-#[derive(Debug)]
-pub struct QRFinderPosition {
-    pub location: Point,
-    pub module_size: f64,
-    pub last_module_size: f64,
-}
+pub type QRMask = Fn(&QRData, u32, u32) -> u8;
 
 #[derive(Debug, Clone)]
 pub struct BlockInfo {
@@ -117,21 +77,4 @@ pub fn block_info(version: u32, level: &ECLevel) -> Result<Vec<BlockInfo>, QRErr
     }
 
     Ok(bi_unwound)
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct QRError {
-    pub msg: String,
-}
-
-impl Error for QRError {
-    fn description(&self) -> &str {
-        &self.msg
-    }
-}
-
-impl fmt::Display for QRError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "QRError: {}", self.msg)
-    }
 }

@@ -1,4 +1,4 @@
-use qr::QRLocation;
+use util::qr::QRLocation;
 
 pub trait Detect<T> {
     fn detect(&self, threshold: &T) -> Vec<QRLocation>;
