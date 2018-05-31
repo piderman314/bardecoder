@@ -1,10 +1,8 @@
-use image::GrayImage;
+use super::Prepare;
+
+use image::{DynamicImage, GrayImage};
 
 use std::cmp::{max, min};
-
-pub trait Threshold<G, T> {
-    fn to_threshold(&self, grayscale: G) -> T;
-}
 
 pub struct BlockedMean {
     block_size: u32,
@@ -20,8 +18,10 @@ impl BlockedMean {
     }
 }
 
-impl Threshold<GrayImage, GrayImage> for BlockedMean {
-    fn to_threshold(&self, grayscale: GrayImage) -> GrayImage {
+impl Prepare<DynamicImage, GrayImage> for BlockedMean {
+    fn prepare(&self, input: DynamicImage) -> GrayImage {
+        let grayscale = input.to_luma();
+
         let dimensions = grayscale.dimensions();
         let width = dimensions.0;
         let height = dimensions.1;

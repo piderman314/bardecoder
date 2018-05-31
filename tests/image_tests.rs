@@ -109,7 +109,7 @@ pub fn test_image(file: &str, expected: Vec<Result<String, QRError>>) {
     let img = image::open(file).unwrap();
 
     let decoder = bardecoder::default_decoder();
-    let result = decoder.decode(&img);
+    let result = decoder.decode(img);
 
     assert_eq!(expected, result);
 }
