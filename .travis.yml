@@ -26,7 +26,7 @@ matrix:
       sudo: required
       before_script:
         - cargo install cargo-update || echo "cargo-update already installed"
-        - cargo install --git https://github.com/piderman314/cargo-travis.git --branch travis-pro || echo "cargo-travis already installed"
+        - cargo install --git https://github.com/piderman314/cargo-travis.git --branch travis-pro --force || echo "cargo-travis already installed"
         - cargo install-update -a
       script:
         - |
