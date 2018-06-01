@@ -20,7 +20,9 @@ matrix:
         - cargo install clippy --version $CLIPPY_VERSION || echo "clippy already installed"
       script:
         - cargo clippy -- -D clippy
-    - env: NAME='cargo-coveralls'
+    - env:
+        - NAME='cargo-coveralls'
+        - RUST_LOG="cargo-travis=debug"
       sudo: required
       before_script:
         - cargo install cargo-update || echo "cargo-update already installed"
@@ -29,7 +31,7 @@ matrix:
       script:
         - |
           cargo build --verbose &&
-          cargo coveralls --verbose
+          cargo coveralls --verbose -- --configure=coveralls-service-name=travis-pro
       addons:
         apt:
           packages:
