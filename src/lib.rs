@@ -1,4 +1,5 @@
 #![allow(unknown_lints)]
+#![allow(new_without_default_derive)]
 #![warn(missing_docs)]
 
 extern crate image;

@@ -2,7 +2,6 @@ use super::super::Decode;
 
 use util::qr::{QRData, QRError};
 
-#[derive(Default)]
 pub struct QRDecoder {}
 
 impl QRDecoder {
@@ -11,7 +10,7 @@ impl QRDecoder {
     }
 }
 
-impl Decode for QRDecoder {
+impl Decode<QRData, QRError> for QRDecoder {
     fn decode(&self, data: Vec<Result<QRData, QRError>>) -> Vec<Result<String, QRError>> {
         let mut result = vec![];
 

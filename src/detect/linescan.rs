@@ -1,4 +1,4 @@
-use super::Detect;
+use super::{Detect, Location};
 
 use std::cmp::{max, min};
 use std::iter::repeat;
@@ -15,7 +15,6 @@ use image::{DynamicImage, Rgb};
 #[cfg(feature = "debug-images")]
 use std::{env::temp_dir, fs::create_dir_all};
 
-#[derive(Default)]
 pub struct LineScan {}
 
 impl LineScan {
@@ -27,7 +26,7 @@ impl LineScan {
 type Refine = Fn(&LineScan, &GrayImage, &Point, f64) -> Option<QRFinderPosition>;
 
 impl Detect<GrayImage> for LineScan {
-    fn detect(&self, threshold: &GrayImage) -> Vec<QRLocation> {
+    fn detect(&self, threshold: &GrayImage) -> Vec<Location> {
         // The order of refinement is important.
         // The candidate is found in horizontal direction, so the first refinement is vertical
         let refine_func: Vec<(Box<Refine>, f64, f64)> = vec![
@@ -137,7 +136,7 @@ impl Detect<GrayImage> for LineScan {
             }
         }
 
-        let mut locations: Vec<QRLocation> = vec![];
+        let mut locations: Vec<Location> = vec![];
 
         let max_candidates = candidates.len();
 
@@ -172,7 +171,7 @@ impl Detect<GrayImage> for LineScan {
                         &candidates[candidate3].location,
                         candidates[candidate1].module_size,
                     ) {
-                        locations.push(qr);
+                        locations.push(Location::QR(qr));
                     }
                 }
             }

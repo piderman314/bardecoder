@@ -10,13 +10,12 @@ use extract::QRExtractor;
 use prepare::BlockedMean;
 use prepare::Prepare;
 
-use util::qr::QRError;
+use util::qr::{QRData, QRError, QRLocation};
 
 pub struct Decoder<IMG, PREPD> {
     prepare: Box<Prepare<IMG, PREPD>>,
     detect: Box<Detect<PREPD>>,
-    extract: Box<Extract<PREPD>>,
-    decode: Box<Decode>,
+    qr: ExtractDecode<PREPD, QRLocation, QRData, QRError>,
 }
 
 impl<IMG, PREPD> Decoder<IMG, PREPD> {
@@ -28,8 +27,9 @@ impl<IMG, PREPD> Decoder<IMG, PREPD> {
             return vec![];
         }
 
-        let extraction = self.extract.extract(&prepared, locations);
-        self.decode.decode(extraction)
+        //let extraction = self.extract.extract(&prepared, locations);
+        //self.decode.decode(extraction)
+        vec![]
     }
 }
 
@@ -55,23 +55,19 @@ pub fn default_decoder() -> Decoder<DynamicImage, GrayImage> {
 /// * Detect
 /// * Extract
 /// * Decode
-#[derive(Default)]
 pub struct DecoderBuilder<IMG, PREPD> {
     prepare: Option<Box<Prepare<IMG, PREPD>>>,
     detect: Option<Box<Detect<PREPD>>>,
-    extract: Option<Box<Extract<PREPD>>>,
-    decode: Option<Box<Decode>>,
+    qr: Option<ExtractDecode<PREPD, QRLocation, QRData, QRError>>,
 }
 
-#[allow(new_without_default_derive)] // not sure why clippy is complaining about it here
 impl<IMG, PREPD> DecoderBuilder<IMG, PREPD> {
     /// Constructor; all fields initialized as None
     pub fn new() -> DecoderBuilder<IMG, PREPD> {
         DecoderBuilder {
             prepare: None,
             detect: None,
-            extract: None,
-            decode: None,
+            qr: None,
         }
     }
 
@@ -88,13 +84,12 @@ impl<IMG, PREPD> DecoderBuilder<IMG, PREPD> {
         self
     }
 
-    pub fn extract(&mut self, extract: Box<Extract<PREPD>>) -> &mut DecoderBuilder<IMG, PREPD> {
-        self.extract = Some(extract);
-        self
-    }
-
-    pub fn decode(&mut self, decode: Box<Decode>) -> &mut DecoderBuilder<IMG, PREPD> {
-        self.decode = Some(decode);
+    pub fn qr(
+        &mut self,
+        extract: Box<Extract<PREPD, QRLocation, QRData, QRError>>,
+        decode: Box<Decode<QRData, QRError>>,
+    ) -> &mut DecoderBuilder<IMG, PREPD> {
+        self.qr = Some(ExtractDecode { extract, decode });
         self
     }
 
@@ -112,19 +107,10 @@ impl<IMG, PREPD> DecoderBuilder<IMG, PREPD> {
             panic!("Cannot build Decoder without Detect component");
         }
 
-        if self.extract.is_none() {
-            panic!("Cannot build Decoder without Extract component");
-        }
-
-        if self.decode.is_none() {
-            panic!("Cannot build Decoder without Decode componen");
-        }
-
         Decoder {
             prepare: self.prepare.unwrap(),
             detect: self.detect.unwrap(),
-            extract: self.extract.unwrap(),
-            decode: self.decode.unwrap(),
+            qr: self.qr.unwrap(),
         }
     }
 }
@@ -144,8 +130,12 @@ pub fn default_builder() -> DecoderBuilder<DynamicImage, GrayImage> {
 
     db.prepare(Box::new(BlockedMean::new(5, 7)));
     db.detect(Box::new(LineScan::new()));
-    db.extract(Box::new(QRExtractor::new()));
-    db.decode(Box::new(QRDecoder::new()));
+    db.qr(Box::new(QRExtractor::new()), Box::new(QRDecoder::new()));
 
     db
+}
+
+struct ExtractDecode<PREPD, LOC, DATA, ERROR> {
+    extract: Box<Extract<PREPD, LOC, DATA, ERROR>>,
+    decode: Box<Decode<DATA, ERROR>>,
 }

@@ -1,7 +1,7 @@
 use util::qr::QRLocation;
 
 pub trait Detect<T> {
-    fn detect(&self, threshold: &T) -> Vec<QRLocation>;
+    fn detect(&self, threshold: &T) -> Vec<Location>;
 }
 
 mod linescan;

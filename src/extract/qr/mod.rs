@@ -13,7 +13,6 @@ use std::{
     cmp::{max, min}, env::temp_dir, fs::create_dir_all,
 };
 
-#[derive(Default)]
 pub struct QRExtractor {}
 
 impl QRExtractor {
@@ -22,7 +21,7 @@ impl QRExtractor {
     }
 }
 
-impl Extract<GrayImage> for QRExtractor {
+impl Extract<GrayImage, QRLocation, QRData, QRError> for QRExtractor {
     fn extract(
         &self,
         threshold: &GrayImage,
