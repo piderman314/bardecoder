@@ -2,9 +2,17 @@ use super::super::Decode;
 
 use util::qr::{QRData, QRError};
 
+/// Decode a QR code into a resulting String
+///
+/// This decoder will, in order:
+/// * Determine QR Format information
+/// * Extract the interleaved blocks of codewords
+/// * Perform error correction
+/// * Decode the blocks into a String
 pub struct QRDecoder {}
 
 impl QRDecoder {
+    /// Construct a new QRDecoder
     pub fn new() -> QRDecoder {
         QRDecoder {}
     }
@@ -20,15 +28,12 @@ impl Decode<QRData, QRError> for QRDecoder {
 
         let mut all_blocks = vec![];
 
-        let mut b = 0;
-        for block in blocks {
-            let corrected = super::correct::correct(block, &block_info[b])?;
+        for (block, bi) in blocks.into_iter().zip(block_info) {
+            let corrected = super::correct::correct(block, &bi)?;
 
-            for corr in corrected.iter().take(block_info[b].data_per as usize) {
+            for corr in corrected.iter().take(bi.data_per as usize) {
                 all_blocks.push(*corr);
             }
-
-            b += 1;
         }
 
         debug!("TOTAL LENGTH {}", all_blocks.len());
