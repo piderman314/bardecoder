@@ -9,6 +9,11 @@ use util::qr::{QRData, QRError};
 /// * Extract the interleaved blocks of codewords
 /// * Perform error correction
 /// * Decode the blocks into a String
+///
+/// # Optimisation
+/// The error correction process can be relatively expensive. This decoder has a fast detection of the existence of errors,
+/// allowing to bypass the correction altogether if none exist. Users of this library are encouraged to provide high quality fault-free images,
+/// speeding up the decoding process by not having to correct errors.
 pub struct QRDecoder {}
 
 impl QRDecoder {
