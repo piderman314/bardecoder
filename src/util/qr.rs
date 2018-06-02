@@ -1,24 +1,11 @@
-use std::error::Error;
-use std::fmt::{Display, Formatter, Result};
 use std::ops::Index;
 
 use util::Point;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Fail, Debug, Clone, PartialEq)]
+#[fail(display = "Error decoding QR Code: {}", msg)]
 pub struct QRError {
     pub msg: String,
-}
-
-impl Error for QRError {
-    fn description(&self) -> &str {
-        &self.msg
-    }
-}
-
-impl Display for QRError {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "QRError: {}", self.msg)
-    }
 }
 
 #[derive(Debug)]

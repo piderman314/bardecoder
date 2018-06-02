@@ -1,7 +1,8 @@
 extern crate bardecoder;
+extern crate failure;
 extern crate image;
 
-use bardecoder::util::qr::QRError;
+use failure::Error;
 
 #[test]
 pub fn test_version1_example() {
@@ -105,11 +106,17 @@ pub fn test_wikipedia_examples() {
     );
 }
 
-pub fn test_image(file: &str, expected: Vec<Result<String, QRError>>) {
+pub fn test_image(file: &str, expected: Vec<Result<String, Error>>) {
     let img = image::open(file).unwrap();
 
     let decoder = bardecoder::default_decoder();
     let result = decoder.decode(img);
 
-    assert_eq!(expected, result);
+    assert_eq!(expected.len(), result.len());
+
+    for (expected, result) in expected.into_iter().zip(result) {
+        assert!(expected.is_ok());
+        assert!(result.is_ok());
+        assert_eq!(expected.unwrap(), result.unwrap());
+    }
 }

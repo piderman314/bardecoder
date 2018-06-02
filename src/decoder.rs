@@ -1,14 +1,12 @@
 use image::DynamicImage;
 use image::GrayImage;
 
-use decode::Decode;
-use decode::QRDecoder;
-use detect::Detect;
-use detect::LineScan;
-use extract::Extract;
-use extract::QRExtractor;
-use prepare::BlockedMean;
-use prepare::Prepare;
+use failure::Error;
+
+use decode::{Decode, QRDecoder};
+use detect::{Detect, LineScan, Location};
+use extract::{Extract, QRExtractor};
+use prepare::{BlockedMean, Prepare};
 
 use util::qr::{QRData, QRError, QRLocation};
 
@@ -19,7 +17,7 @@ pub struct Decoder<IMG, PREPD> {
 }
 
 impl<IMG, PREPD> Decoder<IMG, PREPD> {
-    pub fn decode(&self, source: IMG) -> Vec<Result<String, QRError>> {
+    pub fn decode(&self, source: IMG) -> Vec<Result<String, Error>> {
         let prepared = self.prepare.prepare(source);
         let locations = self.detect.detect(&prepared);
 
@@ -27,9 +25,20 @@ impl<IMG, PREPD> Decoder<IMG, PREPD> {
             return vec![];
         }
 
-        //let extraction = self.extract.extract(&prepared, locations);
-        //self.decode.decode(extraction)
-        vec![]
+        let mut allDecoded = vec![];
+
+        for location in locations {
+            match location {
+                Location::QR(qrloc) => {
+                    let extracted = self.qr.extract.extract(&prepared, qrloc);
+                    let decoded = self.qr.decode.decode(extracted);
+
+                    allDecoded.push(decoded.or_else(|err| Err(Error::from(err))));
+                }
+            }
+        }
+
+        allDecoded
     }
 }
 

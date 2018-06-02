@@ -22,84 +22,66 @@ impl QRExtractor {
 }
 
 impl Extract<GrayImage, QRLocation, QRData, QRError> for QRExtractor {
-    fn extract(
-        &self,
-        threshold: &GrayImage,
-        locs: Vec<QRLocation>,
-    ) -> Vec<Result<QRData, QRError>> {
-        let mut qr_data = vec![];
+    fn extract(&self, threshold: &GrayImage, loc: QRLocation) -> Result<QRData, QRError> {
+        let size = 17 + loc.version * 4;
+        let p = determine_perspective(threshold, loc.version, size, &loc)?;
 
-        for loc in locs {
-            let size = 17 + loc.version * 4;
-            let p = determine_perspective(threshold, loc.version, size, &loc);
+        debug!("PERSPECTIVE {:?}", p);
 
-            if p.is_err() {
-                qr_data.push(Err(p.err().unwrap()));
-                continue;
-            }
+        let mut start = loc.top_left - 3.0 * p.dy - 3.0 * p.ddy;
 
-            let p = p.unwrap();
+        debug!("START {:?}", start);
 
-            debug!("PERSPECTIVE {:?}", p);
+        let mut data = vec![];
 
-            let mut start = loc.top_left - 3.0 * p.dy - 3.0 * p.ddy;
+        #[cfg(feature = "debug-images")]
+        let mut img = DynamicImage::ImageLuma8(threshold.clone()).to_rgb();
 
-            debug!("START {:?}", start);
+        let mut dy = p.dy - 3.0 * p.ddy;
+        let mut dx = p.dx - 3.0 * p.ddx;
+        for _ in 0..size {
+            let mut line = start - 3.0 * dx;
 
-            let mut data = vec![];
-
-            #[cfg(feature = "debug-images")]
-            let mut img = DynamicImage::ImageLuma8(threshold.clone()).to_rgb();
-
-            let mut dy = p.dy - 3.0 * p.ddy;
-            let mut dx = p.dx - 3.0 * p.ddx;
             for _ in 0..size {
-                let mut line = start - 3.0 * dx;
+                let x = line.x.round() as u32;
+                let y = line.y.round() as u32;
+                let pixel = threshold.get_pixel(x, y)[0];
 
-                for _ in 0..size {
-                    let x = line.x.round() as u32;
-                    let y = line.y.round() as u32;
-                    let pixel = threshold.get_pixel(x, y)[0];
-
-                    #[cfg(feature = "debug-images")]
-                    {
-                        if pixel == 0 {
-                            for i in max(0, x.saturating_sub(2))..min(img.dimensions().0, x + 2) {
-                                for j in max(0, y.saturating_sub(2))..min(img.dimensions().0, y + 2)
-                                {
-                                    img.put_pixel(i, j, Rgb { data: [255, 0, 0] });
-                                }
+                #[cfg(feature = "debug-images")]
+                {
+                    if pixel == 0 {
+                        for i in max(0, x.saturating_sub(2))..min(img.dimensions().0, x + 2) {
+                            for j in max(0, y.saturating_sub(2))..min(img.dimensions().0, y + 2) {
+                                img.put_pixel(i, j, Rgb { data: [255, 0, 0] });
                             }
                         }
                     }
-
-                    data.push(pixel);
-                    line = line + dx;
                 }
-                dx = dx + p.ddx;
 
-                start = start + dy;
-                dy = dy + p.ddy;
+                data.push(pixel);
+                line = line + dx;
             }
+            dx = dx + p.ddx;
 
-            #[cfg(feature = "debug-images")]
-            {
-                let mut tmp = temp_dir();
-                tmp.push("bardecoder-debug-images");
-
-                if let Ok(_) = create_dir_all(tmp.clone()) {
-                    tmp.push("extract.png");
-
-                    if let Ok(_) = DynamicImage::ImageRgb8(img).save(tmp.clone()) {
-                        debug!("Debug image with data pixels saved to {:?}", tmp);
-                    }
-                }
-            }
-
-            qr_data.push(Ok(QRData::new(data, loc.version)));
+            start = start + dy;
+            dy = dy + p.ddy;
         }
 
-        qr_data
+        #[cfg(feature = "debug-images")]
+        {
+            let mut tmp = temp_dir();
+            tmp.push("bardecoder-debug-images");
+
+            if let Ok(_) = create_dir_all(tmp.clone()) {
+                tmp.push("extract.png");
+
+                if let Ok(_) = DynamicImage::ImageRgb8(img).save(tmp.clone()) {
+                    debug!("Debug image with data pixels saved to {:?}", tmp);
+                }
+            }
+        }
+
+        Ok(QRData::new(data, loc.version))
     }
 }
 

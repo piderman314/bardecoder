@@ -2,10 +2,14 @@
 #![allow(new_without_default_derive)]
 #![warn(missing_docs)]
 
+extern crate failure;
 extern crate image;
 
 #[macro_use]
 extern crate log;
+
+#[macro_use]
+extern crate failure_derive;
 
 mod decoder;
 
