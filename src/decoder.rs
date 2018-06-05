@@ -25,7 +25,7 @@ impl<IMG, PREPD> Decoder<IMG, PREPD> {
             return vec![];
         }
 
-        let mut allDecoded = vec![];
+        let mut all_decoded = vec![];
 
         for location in locations {
             match location {
@@ -33,12 +33,12 @@ impl<IMG, PREPD> Decoder<IMG, PREPD> {
                     let extracted = self.qr.extract.extract(&prepared, qrloc);
                     let decoded = self.qr.decode.decode(extracted);
 
-                    allDecoded.push(decoded.or_else(|err| Err(Error::from(err))));
+                    all_decoded.push(decoded.or_else(|err| Err(Error::from(err))));
                 }
             }
         }
 
-        allDecoded
+        all_decoded
     }
 }
 
