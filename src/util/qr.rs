@@ -1,3 +1,5 @@
+//! Utility structs for decoding QR Codes
+
 use std::ops::Index;
 
 use util::Point;
