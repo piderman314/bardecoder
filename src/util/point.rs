@@ -1,14 +1,22 @@
 use std::ops::{Add, Div, Mul, Sub};
 
+/// Representation of a location in the source image, in pixels
 #[derive(Debug, Copy, Clone)]
 pub struct Point {
+    /// X Coordinate, in pixels
     pub x: f64,
+
+    /// Y Coordinate, in pixels
     pub y: f64,
 }
 
+/// Difference between two [`Point`]s, in pixels
 #[derive(Debug, Copy, Clone)]
 pub struct Delta {
+    /// X Coordinate difference, in pixels    
     pub dx: f64,
+
+    /// Y Coordinate difference, in pixels
     pub dy: f64,
 }
 

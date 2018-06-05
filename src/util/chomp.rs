@@ -1,6 +1,22 @@
 use std::iter::Peekable;
 use std::vec::IntoIter;
 
+/// Chomp aribitrary numbers of bits from a Vec<u8> as if it was a u8*len
+///
+/// # Examples
+/// ```
+/// # extern crate bardecoder;
+/// use bardecoder::util::Chomp;
+/// use bardecoder::util::qr::QRError;
+///
+/// let mut chomp = Chomp::new(vec![0b11101011, 0b01101101, 0b10101110, 0b00011001]);
+/// assert_eq!(chomp.chomp(3).unwrap(), 0b111);
+/// assert_eq!(chomp.chomp_or(8, QRError{msg:String::from("Error")}).unwrap(), 0b01011011);
+/// assert_eq!(chomp.chomp_or_u16(12, QRError{msg:String::from("Error")}).unwrap(), 0b011011010111);
+/// assert_eq!(chomp.chomp(4).unwrap(), 0b0000);
+/// assert!(chomp.chomp(8).is_none()); // only 5 bits left
+/// assert_eq!(chomp.chomp(5).unwrap(), 0b11001);
+/// ```
 pub struct Chomp {
     bytes: Peekable<IntoIter<u8>>,
     bits_left: usize,
@@ -9,6 +25,7 @@ pub struct Chomp {
 }
 
 impl Chomp {
+    /// Create a Chomp using the provided bytes
     pub fn new(bytes: Vec<u8>) -> Chomp {
         let bits_left = bytes.len() * 8;
         let mut bytes = bytes.into_iter().peekable();
@@ -23,10 +40,14 @@ impl Chomp {
         }
     }
 
+    /// Try to chomp `nr_bits` bits. If not enough bits are left, or requesting more than 8 bits the provided `err` will be returned
+    /// If requesting fewer than 8 bits, the result will be in the least significant bits of the u8
     pub fn chomp_or<E>(&mut self, nr_bits: u8, err: E) -> Result<u8, E> {
         self.chomp(nr_bits).ok_or(err)
     }
 
+    /// Try to chomp `nr_bits` bits. If not enough bits are left, or requesting more than 16 bits the provided `err` will be returned
+    /// If requesting fewer than 16 bits, the result will be in the least significant bits of the u16
     pub fn chomp_or_u16<E: Clone>(&mut self, nr_bits: u8, err: E) -> Result<u16, E> {
         let mut bits = nr_bits;
 
@@ -41,6 +62,8 @@ impl Chomp {
         Ok(result)
     }
 
+    /// Try to chomp `nr_bits` bits. If not enough bits are left, or requesting more than 8 bits [`None`] will be returned
+    /// If requesting fewer than 8 bits, the result will be in the least significant bits of the u8
     pub fn chomp(&mut self, nr_bits: u8) -> Option<u8> {
         if nr_bits < 1 || nr_bits > 8 || nr_bits as usize > self.bits_left {
             return None;
