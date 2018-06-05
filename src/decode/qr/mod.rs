@@ -74,7 +74,67 @@ pub fn block_info(version: u32, level: &ECLevel) -> Result<Vec<BlockInfo>, QRErr
             BlockInfo::new(2, 34, 12, 11),
         ]),
 
+        // Version 6
+        (6, ECLevel::LOW) => Ok(vec![BlockInfo::new(2, 86, 68, 9)]),
+        (6, ECLevel::MEDIUM) => Ok(vec![BlockInfo::new(4, 43, 27, 8)]),
+        (6, ECLevel::QUARTILE) => Ok(vec![BlockInfo::new(4, 43, 19, 12)]),
+        (6, ECLevel::HIGH) => Ok(vec![BlockInfo::new(4, 43, 15, 14)]),
+
+        // Version 7
+        (7, ECLevel::LOW) => Ok(vec![BlockInfo::new(2, 98, 78, 10)]),
+        (7, ECLevel::MEDIUM) => Ok(vec![BlockInfo::new(4, 49, 31, 9)]),
+        (7, ECLevel::QUARTILE) => Ok(vec![
+            BlockInfo::new(2, 32, 14, 9),
+            BlockInfo::new(4, 33, 15, 9),
+        ]),
+        (7, ECLevel::HIGH) => Ok(vec![
+            BlockInfo::new(4, 39, 13, 13),
+            BlockInfo::new(1, 40, 14, 13),
+        ]),
+
+        // Version 8
+        (8, ECLevel::LOW) => Ok(vec![BlockInfo::new(2, 121, 97, 12)]),
+        (8, ECLevel::MEDIUM) => Ok(vec![
+            BlockInfo::new(2, 60, 38, 11),
+            BlockInfo::new(2, 61, 39, 11),
+        ]),
+        (8, ECLevel::QUARTILE) => Ok(vec![
+            BlockInfo::new(4, 40, 18, 11),
+            BlockInfo::new(2, 41, 19, 11),
+        ]),
+        (8, ECLevel::HIGH) => Ok(vec![
+            BlockInfo::new(4, 40, 14, 13),
+            BlockInfo::new(2, 41, 15, 13),
+        ]),
+
+        // Version 9
+        (9, ECLevel::LOW) => Ok(vec![BlockInfo::new(2, 146, 116, 15)]),
+        (9, ECLevel::MEDIUM) => Ok(vec![
+            BlockInfo::new(3, 58, 36, 11),
+            BlockInfo::new(2, 59, 37, 11),
+        ]),
+        (9, ECLevel::QUARTILE) => Ok(vec![
+            BlockInfo::new(4, 36, 16, 10),
+            BlockInfo::new(4, 37, 17, 10),
+        ]),
+        (9, ECLevel::HIGH) => Ok(vec![
+            BlockInfo::new(4, 36, 12, 12),
+            BlockInfo::new(4, 37, 13, 12),
+        ]),
+
         // Version 10
+        (10, ECLevel::LOW) => Ok(vec![
+            BlockInfo::new(2, 86, 68, 9),
+            BlockInfo::new(2, 87, 69, 9),
+        ]),
+        (10, ECLevel::MEDIUM) => Ok(vec![
+            BlockInfo::new(4, 69, 43, 13),
+            BlockInfo::new(1, 70, 44, 13),
+        ]),
+        (10, ECLevel::QUARTILE) => Ok(vec![
+            BlockInfo::new(6, 43, 19, 12),
+            BlockInfo::new(2, 44, 20, 12),
+        ]),
         (10, ECLevel::HIGH) => Ok(vec![
             BlockInfo::new(6, 43, 15, 14),
             BlockInfo::new(2, 44, 16, 14),

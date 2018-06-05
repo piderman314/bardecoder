@@ -148,6 +148,8 @@ fn alignment_location(version: u32) -> Result<AlignmentLocation, QRError> {
 
         // multiple alignment patterns
         7 => Ok(AlignmentLocation::new(22, 16)),
+        8 => Ok(AlignmentLocation::new(24, 18)),
+        9 => Ok(AlignmentLocation::new(26, 20)),
         10 => Ok(AlignmentLocation::new(28, 22)),
         25 => Ok(AlignmentLocation::new(32, 26)),
         36 => Ok(AlignmentLocation::new(24, 26)),
