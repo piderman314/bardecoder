@@ -1,3 +1,5 @@
+//! Various utilities to aid in decoding barcodes
+
 mod chomp;
 mod point;
 

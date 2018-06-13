@@ -1,3 +1,7 @@
+//! Detect various barcodes in pre-processed images
+//!
+//! (well, only QR so far)
+
 use util::qr::QRLocation;
 
 pub trait Detect<T> {

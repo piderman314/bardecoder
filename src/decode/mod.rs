@@ -1,3 +1,5 @@
+//! Decode data extracted from an image
+
 use failure::Fail;
 
 mod qr;

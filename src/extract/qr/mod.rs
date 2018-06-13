@@ -13,9 +13,17 @@ use std::{
     cmp::{max, min}, env::temp_dir, fs::create_dir_all,
 };
 
+/// Extract QR Data from a preprocessed image
+///
+/// If the version of the QR is higher than 1, this extractor will first try to find the bottom left-most
+/// alignment pattern and adjust for any perspective skewing.
+///
+/// Data is extracted by sampling the center pixel of the estimated module locations.
+/// These are determined by dividing each row and column into equal parts.
 pub struct QRExtractor {}
 
 impl QRExtractor {
+    /// Construct a new QRExtractor
     pub fn new() -> QRExtractor {
         QRExtractor {}
     }
@@ -240,6 +248,7 @@ fn is_alignment(threshold: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f6
 
         let mut tmp = temp_dir();
         tmp.push("bardecoder-debug-images");
+        tmp.push("alignment");
 
         if let Ok(_) = create_dir_all(tmp.clone()) {
             tmp.push(format!(

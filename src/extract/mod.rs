@@ -1,3 +1,5 @@
+//! Extract data from an image
+
 use failure::Fail;
 
 mod qr;

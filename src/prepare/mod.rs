@@ -1,3 +1,5 @@
+//! Prepare an image for data extraction
+
 mod blockedmean;
 
 pub use self::blockedmean::BlockedMean;
