@@ -23,7 +23,7 @@ impl LineScan {
     }
 }
 
-type Refine = Fn(&LineScan, &GrayImage, &Point, f64) -> Option<QRFinderPosition>;
+type Refine = dyn Fn(&LineScan, &GrayImage, &Point, f64) -> Option<QRFinderPosition>;
 
 impl Detect<GrayImage> for LineScan {
     fn detect(&self, threshold: &GrayImage) -> Vec<Location> {

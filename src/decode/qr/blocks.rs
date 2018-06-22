@@ -63,7 +63,7 @@ pub fn blocks(data: &QRData, level: &ECLevel, mask: &Box<QRMask>) -> Result<Vec<
     Ok(blocks)
 }
 
-fn y_range(x: u32, side: u32) -> Box<Iterator<Item = u32>> {
+fn y_range(x: u32, side: u32) -> Box<dyn Iterator<Item = u32>> {
     let x = if x < 6 { x + 1 } else { x };
     if (i64::from(x) - i64::from(side) + 1) % 4 == 0 {
         Box::new((0..side).rev())

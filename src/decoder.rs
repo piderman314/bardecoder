@@ -11,8 +11,8 @@ use prepare::{BlockedMean, Prepare};
 use util::qr::{QRData, QRError, QRLocation};
 
 pub struct Decoder<IMG, PREPD> {
-    prepare: Box<Prepare<IMG, PREPD>>,
-    detect: Box<Detect<PREPD>>,
+    prepare: Box<dyn Prepare<IMG, PREPD>>,
+    detect: Box<dyn Detect<PREPD>>,
     qr: ExtractDecode<PREPD, QRLocation, QRData, QRError>,
 }
 
@@ -65,8 +65,8 @@ pub fn default_decoder() -> Decoder<DynamicImage, GrayImage> {
 /// * Extract
 /// * Decode
 pub struct DecoderBuilder<IMG, PREPD> {
-    prepare: Option<Box<Prepare<IMG, PREPD>>>,
-    detect: Option<Box<Detect<PREPD>>>,
+    prepare: Option<Box<dyn Prepare<IMG, PREPD>>>,
+    detect: Option<Box<dyn Detect<PREPD>>>,
     qr: Option<ExtractDecode<PREPD, QRLocation, QRData, QRError>>,
 }
 
@@ -82,21 +82,21 @@ impl<IMG, PREPD> DecoderBuilder<IMG, PREPD> {
 
     pub fn prepare(
         &mut self,
-        prepare: Box<Prepare<IMG, PREPD>>,
+        prepare: Box<dyn Prepare<IMG, PREPD>>,
     ) -> &mut DecoderBuilder<IMG, PREPD> {
         self.prepare = Some(prepare);
         self
     }
 
-    pub fn detect(&mut self, detect: Box<Detect<PREPD>>) -> &mut DecoderBuilder<IMG, PREPD> {
+    pub fn detect(&mut self, detect: Box<dyn Detect<PREPD>>) -> &mut DecoderBuilder<IMG, PREPD> {
         self.detect = Some(detect);
         self
     }
 
     pub fn qr(
         &mut self,
-        extract: Box<Extract<PREPD, QRLocation, QRData, QRError>>,
-        decode: Box<Decode<QRData, QRError>>,
+        extract: Box<dyn Extract<PREPD, QRLocation, QRData, QRError>>,
+        decode: Box<dyn Decode<QRData, QRError>>,
     ) -> &mut DecoderBuilder<IMG, PREPD> {
         self.qr = Some(ExtractDecode { extract, decode });
         self
@@ -145,6 +145,6 @@ pub fn default_builder() -> DecoderBuilder<DynamicImage, GrayImage> {
 }
 
 struct ExtractDecode<PREPD, LOC, DATA, ERROR> {
-    extract: Box<Extract<PREPD, LOC, DATA, ERROR>>,
-    decode: Box<Decode<DATA, ERROR>>,
+    extract: Box<dyn Extract<PREPD, LOC, DATA, ERROR>>,
+    decode: Box<dyn Decode<DATA, ERROR>>,
 }

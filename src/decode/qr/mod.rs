@@ -15,7 +15,7 @@ pub enum ECLevel {
     HIGH,
 }
 
-pub type QRMask = Fn(&QRData, u32, u32) -> u8;
+pub type QRMask = dyn Fn(&QRData, u32, u32) -> u8;
 
 #[derive(Debug, Clone)]
 pub struct BlockInfo {
