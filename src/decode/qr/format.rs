@@ -3,6 +3,8 @@ use super::{ECLevel, QRMask};
 
 use crate::util::qr::{QRData, QRError};
 
+use log::{debug, log};
+
 const MASK: [u8; 15] = [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0];
 
 pub fn format(data: &QRData) -> Result<(ECLevel, Box<QRMask>), QRError> {

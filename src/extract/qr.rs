@@ -4,6 +4,7 @@ use crate::util::qr::{QRData, QRError, QRLocation};
 use crate::util::{Delta, Point};
 
 use image::GrayImage;
+use log::{debug, log};
 
 #[cfg(feature = "debug-images")]
 use image::{DynamicImage, Rgb};

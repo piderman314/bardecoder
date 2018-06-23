@@ -1,6 +1,8 @@
 use crate::util::qr::QRError;
 use crate::util::Chomp;
 
+use log::{debug, log};
+
 pub fn data(input: Vec<u8>, version: u32) -> Result<String, QRError> {
     let mut chomp = Chomp::new(input);
     let mut result = String::new();

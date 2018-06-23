@@ -2,6 +2,8 @@ use super::super::Decode;
 
 use crate::util::qr::{QRData, QRError};
 
+use log::{debug, log};
+
 /// Decode a QR code into a resulting String
 ///
 /// This decoder will, in order:

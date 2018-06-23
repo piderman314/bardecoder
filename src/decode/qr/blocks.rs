@@ -3,6 +3,8 @@ use super::{BlockInfo, ECLevel, QRMask};
 
 use crate::util::qr::{QRData, QRError};
 
+use log::{debug, log, trace};
+
 #[allow(borrowed_box)] // QRMask is a trait, unsure how to solve
 pub fn blocks(data: &QRData, level: &ECLevel, mask: &Box<QRMask>) -> Result<Vec<Vec<u8>>, QRError> {
     let bi = block_info(data.version, level)?;

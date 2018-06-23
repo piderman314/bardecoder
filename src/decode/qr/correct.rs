@@ -3,6 +3,8 @@ use super::BlockInfo;
 
 use crate::util::qr::QRError;
 
+use log::{debug, log};
+
 use std::ops::{Div, Mul, Sub};
 
 pub fn correct(mut block: Vec<u8>, block_info: &BlockInfo) -> Result<Vec<u8>, QRError> {

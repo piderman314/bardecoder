@@ -4,6 +4,8 @@ use std::ops::Index;
 
 use crate::util::Point;
 
+use failure_derive::Fail;
+
 /// Generic QR Error message. Can be converted into `failure::Error`
 #[derive(Fail, Debug, Clone, PartialEq)]
 #[fail(display = "Error decoding QR Code: {}", msg)]

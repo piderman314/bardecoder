@@ -8,6 +8,7 @@ use crate::util::qr::QRLocation;
 use crate::util::Point;
 
 use image::GrayImage;
+use log::{debug, log, trace};
 
 #[cfg(feature = "debug-images")]
 use image::{DynamicImage, Rgb};
