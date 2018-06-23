@@ -12,7 +12,9 @@ mod linescan;
 
 pub use self::linescan::LineScan;
 
+/// Location of a detected barcode
 #[derive(Debug)]
 pub enum Location {
+    /// Location of a detected QR Code
     QR(QRLocation),
 }
