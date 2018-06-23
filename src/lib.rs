@@ -4,9 +4,6 @@
 #![allow(new_without_default_derive)]
 #![warn(missing_docs)]
 
-extern crate failure;
-extern crate image;
-
 #[macro_use]
 extern crate log;
 
@@ -21,5 +18,5 @@ pub mod extract;
 pub mod prepare;
 pub mod util;
 
-pub use decoder::{default_builder, default_decoder};
-pub use decoder::{Decoder, DecoderBuilder};
+pub use crate::decoder::{default_builder, default_decoder};
+pub use crate::decoder::{Decoder, DecoderBuilder};

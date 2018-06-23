@@ -1,7 +1,7 @@
 use super::Extract;
 
-use util::qr::{QRData, QRError, QRLocation};
-use util::{Delta, Point};
+use crate::util::qr::{QRData, QRError, QRLocation};
+use crate::util::{Delta, Point};
 
 use image::GrayImage;
 

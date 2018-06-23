@@ -1,7 +1,7 @@
 use super::galois::{EXP4, GF4, LOG4};
 use super::{ECLevel, QRMask};
 
-use util::qr::{QRData, QRError};
+use crate::util::qr::{QRData, QRError};
 
 const MASK: [u8; 15] = [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0];
 

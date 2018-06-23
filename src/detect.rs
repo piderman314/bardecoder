@@ -2,7 +2,7 @@
 //!
 //! (well, only QR so far)
 
-use util::qr::QRLocation;
+use crate::util::qr::QRLocation;
 
 pub trait Detect<T> {
     fn detect(&self, threshold: &T) -> Vec<Location>;

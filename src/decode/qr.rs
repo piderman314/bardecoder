@@ -1,4 +1,4 @@
-use util::qr::{QRData, QRError};
+use crate::util::qr::{QRData, QRError};
 
 pub mod blocks;
 pub mod correct;

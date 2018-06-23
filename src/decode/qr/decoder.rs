@@ -1,6 +1,6 @@
 use super::super::Decode;
 
-use util::qr::{QRData, QRError};
+use crate::util::qr::{QRData, QRError};
 
 /// Decode a QR code into a resulting String
 ///

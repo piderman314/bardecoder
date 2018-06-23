@@ -3,12 +3,12 @@ use image::GrayImage;
 
 use failure::Error;
 
-use decode::{Decode, QRDecoder};
-use detect::{Detect, LineScan, Location};
-use extract::{Extract, QRExtractor};
-use prepare::{BlockedMean, Prepare};
+use crate::decode::{Decode, QRDecoder};
+use crate::detect::{Detect, LineScan, Location};
+use crate::extract::{Extract, QRExtractor};
+use crate::prepare::{BlockedMean, Prepare};
 
-use util::qr::{QRData, QRError, QRLocation};
+use crate::util::qr::{QRData, QRError, QRLocation};
 
 pub struct Decoder<IMG, PREPD> {
     prepare: Box<dyn Prepare<IMG, PREPD>>,
