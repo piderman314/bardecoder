@@ -19,18 +19,24 @@ use std::vec::IntoIter;
 /// ```
 pub struct Chomp {
     bytes: Peekable<IntoIter<u8>>,
-    bits_left: usize,
+    bits_left: BitCount,
     current_byte: Option<u8>,
-    bits_left_in_byte: u8,
+    bits_left_in_byte: BitCount,
 }
+
+wrapper!(BitCount, usize);
 
 impl Chomp {
     /// Create a Chomp using the provided bytes
     pub fn new(bytes: Vec<u8>) -> Chomp {
-        let bits_left = bytes.len() * 8;
+        let bits_left = BitCount(bytes.len() * 8);
         let mut bytes = bytes.into_iter().peekable();
         let current_byte = bytes.next();
-        let bits_left_in_byte = if current_byte.is_some() { 8 } else { 0 };
+        let bits_left_in_byte = if current_byte.is_some() {
+            BitCount(8)
+        } else {
+            BitCount(0)
+        };
 
         Chomp {
             bytes,
@@ -65,38 +71,43 @@ impl Chomp {
     /// Try to chomp `nr_bits` bits. If not enough bits are left, or requesting more than 8 bits [`None`] will be returned
     /// If requesting fewer than 8 bits, the result will be in the least significant bits of the u8
     pub fn chomp(&mut self, nr_bits: u8) -> Option<u8> {
-        if nr_bits < 1 || nr_bits > 8 || nr_bits as usize > self.bits_left {
+        let bit_count = BitCount(nr_bits as usize);
+        if nr_bits < 1 || nr_bits > 8 || bit_count > self.bits_left {
             return None;
         }
 
-        if nr_bits < self.bits_left_in_byte {
-            self.nibble(nr_bits)
-        } else if nr_bits == self.bits_left_in_byte {
+        if bit_count < self.bits_left_in_byte {
+            self.nibble(bit_count)
+        } else if bit_count == self.bits_left_in_byte {
             let mut result = 0;
 
             if let Some(ref mut byte) = self.current_byte {
-                result = *byte >> (8 - self.bits_left_in_byte);
+                result = *byte >> (8 - self.bits_left_in_byte.0);
             }
 
-            self.bits_left -= self.bits_left_in_byte as usize;
+            self.bits_left -= &self.bits_left_in_byte;
             self.current_byte = self.bytes.next();
-            self.bits_left_in_byte = if self.current_byte.is_some() { 8 } else { 0 };
+            self.bits_left_in_byte = if self.current_byte.is_some() {
+                BitCount(8)
+            } else {
+                BitCount(0)
+            };
 
             Some(result)
         } else {
             let mut result = 0;
-            let bits_to_go = nr_bits - self.bits_left_in_byte;
+            let bits_to_go = bit_count - self.bits_left_in_byte.clone();
 
             if let Some(ref mut byte) = self.current_byte {
-                result = (*byte >> (8 - self.bits_left_in_byte)) << bits_to_go;
+                result = (*byte >> (8 - self.bits_left_in_byte.0)) << bits_to_go.0;
             }
 
-            self.bits_left -= self.bits_left_in_byte as usize;
+            self.bits_left -= &self.bits_left_in_byte;
 
             self.bytes.peek()?;
 
             self.current_byte = self.bytes.next();
-            self.bits_left_in_byte = 8;
+            self.bits_left_in_byte = BitCount(8);
 
             let nibble = self.nibble(bits_to_go).unwrap(); // we just peeked
 
@@ -104,12 +115,12 @@ impl Chomp {
         }
     }
 
-    fn nibble(&mut self, nr_bits: u8) -> Option<u8> {
+    fn nibble(&mut self, nr_bits: BitCount) -> Option<u8> {
         if let Some(ref mut byte) = self.current_byte {
-            let result = *byte >> (8 - nr_bits);
-            *byte <<= nr_bits;
+            let result = *byte >> (8 - nr_bits.0);
+            *byte <<= nr_bits.0;
 
-            self.bits_left_in_byte -= nr_bits;
+            self.bits_left_in_byte -= &nr_bits;
 
             Some(result)
         } else {
