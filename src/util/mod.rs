@@ -1,5 +1,8 @@
 //! Various utilities to aid in decoding barcodes
 
+#[macro_use]
+pub mod macros;
+
 mod chomp;
 mod point;
 
