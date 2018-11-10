@@ -12,3 +12,4 @@ failure_derive = "0.1"
 [features]
 default=[]
 debug-images=[]
+benchmark=[]
