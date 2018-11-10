@@ -10,7 +10,9 @@ use image::{DynamicImage, Rgb};
 
 #[cfg(feature = "debug-images")]
 use std::{
-    cmp::{max, min}, env::temp_dir, fs::create_dir_all,
+    cmp::{max, min},
+    env::temp_dir,
+    fs::create_dir_all,
 };
 
 /// Extract QR Data from a preprocessed image
@@ -134,7 +136,7 @@ fn determine_perspective(
                 continue 'scale;
             }
 
-            for x in -i..i + 1 {
+            for x in -i..=i {
                 let alignment = est_alignment + f64::from(x) / 2.0 * dx - f64::from(i) / 2.0 * dy;
                 if is_alignment(threshold, alignment, dx, dy, scale) {
                     est_alignment = alignment;

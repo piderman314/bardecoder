@@ -76,8 +76,8 @@ impl BlockedMean {
             ((block_width + 1) * (block_height + 1)) as usize
         ];
 
-        for block_x in 0..block_width + 1 {
-            for block_y in 0..block_height + 1 {
+        for block_x in 0..=block_width {
+            for block_y in 0..=block_height {
                 let x_start = max(0, block_x.saturating_sub(block_stride));
                 let x_end = min(block_width, block_x + block_stride);
                 let y_start = max(0, block_y.saturating_sub(block_stride));

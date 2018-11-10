@@ -77,7 +77,7 @@ impl Chomp {
         }
 
         if bit_count < self.bits_left_in_byte {
-            self.nibble(bit_count)
+            self.nibble(&bit_count)
         } else if bit_count == self.bits_left_in_byte {
             let mut result = 0;
 
@@ -109,13 +109,13 @@ impl Chomp {
             self.current_byte = self.bytes.next();
             self.bits_left_in_byte = BitCount(8);
 
-            let nibble = self.nibble(bits_to_go).unwrap(); // we just peeked
+            let nibble = self.nibble(&bits_to_go).unwrap(); // we just peeked
 
             Some(result + nibble)
         }
     }
 
-    fn nibble(&mut self, nr_bits: BitCount) -> Option<u8> {
+    fn nibble(&mut self, nr_bits: &BitCount) -> Option<u8> {
         if let Some(ref mut byte) = self.current_byte {
             let result = *byte >> (8 - nr_bits.0);
             *byte <<= nr_bits.0;

@@ -1,3 +1,4 @@
 {
     "editor.formatOnSave": true,
+    "rust.clippy_preference": "on",
 }
