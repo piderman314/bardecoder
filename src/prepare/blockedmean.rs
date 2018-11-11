@@ -200,11 +200,12 @@ impl Iterator for BlockCoordRangeInclusive {
     type Item = BlockCoord;
 
     fn next(&mut self) -> Option<BlockCoord> {
-        if self.current >= self.end {
+        if self.current > self.end {
             None
         } else {
+            let result = Some(BlockCoord(self.current));
             self.current += 1;
-            Some(BlockCoord(self.current))
+            result
         }
     }
 }
