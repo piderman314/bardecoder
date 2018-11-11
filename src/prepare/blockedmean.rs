@@ -5,15 +5,15 @@ use image::{DynamicImage, GrayImage};
 use std::cmp::{max, min};
 
 pub struct BlockedMean {
-    block_size: u32,
-    block_mean_size: u32,
+    block_size: BlockSize,
+    block_mean_size: BlockSize,
 }
 
 impl BlockedMean {
     pub fn new(block_size: u32, block_mean_size: u32) -> BlockedMean {
         BlockedMean {
-            block_size,
-            block_mean_size,
+            block_size: BlockSize(block_size),
+            block_mean_size: BlockSize(block_mean_size),
         }
     }
 }
@@ -23,8 +23,8 @@ impl Prepare<DynamicImage, GrayImage> for BlockedMean {
         let grayscale = input.to_luma();
 
         let dimensions = grayscale.dimensions();
-        let width = dimensions.0;
-        let height = dimensions.1;
+        let width = ImageCoord(dimensions.0);
+        let height = ImageCoord(dimensions.1);
 
         let block_map = self.as_block_map(&grayscale, width, height);
         let block_mean_map = self.to_block_mean_map(&block_map, width, height);
@@ -34,7 +34,12 @@ impl Prepare<DynamicImage, GrayImage> for BlockedMean {
 }
 
 impl BlockedMean {
-    fn as_block_map(&self, grayscale: &GrayImage, width: u32, height: u32) -> Vec<Stats> {
+    fn as_block_map(
+        &self,
+        grayscale: &GrayImage,
+        width: ImageCoord,
+        height: ImageCoord,
+    ) -> Vec<Stats> {
         let (block_width, block_height) = as_block_coords(width, height, self.block_size);
 
         let mut blocks = vec![
@@ -43,14 +48,12 @@ impl BlockedMean {
                 count: 0,
                 mean: 0.0
             };
-            ((block_width + 1) * (block_height + 1)) as usize
+            ((block_width.0 + 1) * (block_height.0 + 1)) as usize
         ];
 
         for (x, y, p) in grayscale.enumerate_pixels() {
-            let coords = as_block_coords(x, y, self.block_size);
-            let idx: usize = (coords.1 * (block_width + 1) + coords.0) as usize;
-
-            let mut stats = &mut blocks[idx];
+            let coords = as_block_coords(ImageCoord(x), ImageCoord(y), self.block_size);
+            let mut stats = &mut blocks[to_index(coords, block_width)];
 
             stats.total += u64::from(p.data[0]);
             stats.count += 1;
@@ -63,8 +66,13 @@ impl BlockedMean {
         blocks
     }
 
-    fn to_block_mean_map(&self, blocks: &[Stats], width: u32, height: u32) -> Vec<Stats> {
-        let block_stride = (self.block_mean_size - 1) / 2;
+    fn to_block_mean_map(
+        &self,
+        blocks: &[Stats],
+        width: ImageCoord,
+        height: ImageCoord,
+    ) -> Vec<Stats> {
+        let block_stride = BlockCoord((self.block_mean_size.0 - 1) / 2);
         let (block_width, block_height) = as_block_coords(width, height, self.block_size);
 
         let mut block_means = vec![
@@ -73,30 +81,30 @@ impl BlockedMean {
                 count: 0,
                 mean: 0.0
             };
-            ((block_width + 1) * (block_height + 1)) as usize
+            ((block_width + BlockCoord(1)) * (block_height + BlockCoord(1))).0
+                as usize
         ];
 
-        for block_x in 0..=block_width {
-            for block_y in 0..=block_height {
-                let x_start = max(0, block_x.saturating_sub(block_stride));
+        for block_x in range_inc(BlockCoord(0), block_width) {
+            for block_y in range_inc(BlockCoord(0), block_height) {
+                let x_start = max(BlockCoord(0), block_x.saturating_sub(block_stride));
                 let x_end = min(block_width, block_x + block_stride);
-                let y_start = max(0, block_y.saturating_sub(block_stride));
+                let y_start = max(BlockCoord(0), block_y.saturating_sub(block_stride));
                 let y_end = min(block_height, block_y + block_stride);
 
                 let mut total = 0;
                 let mut count = 0;
 
-                for x in x_start..x_end {
-                    for y in y_start..y_end {
-                        let idx: usize = (y * (block_width + 1) + x) as usize;
-                        let mut stats = &blocks[idx];
+                for x in range(x_start, x_end) {
+                    for y in range(y_start, y_end) {
+                        let mut stats = &blocks[to_index((x, y), block_width)];
                         total += stats.total;
                         count += stats.count;
                     }
                 }
 
-                let idx: usize = (block_y * (block_width + 1) + block_x) as usize;
-                block_means[idx].mean = total as f64 / count as f64;
+                block_means[to_index((block_x, block_y), block_width)].mean =
+                    total as f64 / count as f64;
             }
         }
 
@@ -107,16 +115,14 @@ impl BlockedMean {
         &self,
         mut grayscale: GrayImage,
         block_means: &[Stats],
-        width: u32,
-        height: u32,
+        width: ImageCoord,
+        height: ImageCoord,
     ) -> GrayImage {
         for (x, y, p) in grayscale.enumerate_pixels_mut() {
             let (block_width, _) = as_block_coords(width, height, self.block_size);
+            let coords = as_block_coords(ImageCoord(x), ImageCoord(y), self.block_size);
 
-            let coords = as_block_coords(x, y, self.block_size);
-            let idx: usize = (coords.1 * (block_width + 1) + coords.0) as usize;
-
-            let mean = block_means[idx].mean;
+            let mean = block_means[to_index(coords, block_width)].mean;
 
             p.data[0] = if f64::from(p.data[0]) > mean { 255 } else { 0 };
         }
@@ -133,9 +139,78 @@ struct Stats {
 }
 
 #[inline]
-fn as_block_coords(x: u32, y: u32, block_size: u32) -> (u32, u32) {
+fn to_index(coords: (BlockCoord, BlockCoord), width: BlockCoord) -> usize {
+    ((coords.1).0 * (width.0 + 1) + (coords.0).0) as usize
+}
+
+#[inline]
+fn as_block_coords(
+    x: ImageCoord,
+    y: ImageCoord,
+    block_size: BlockSize,
+) -> (BlockCoord, BlockCoord) {
     let x = x / block_size;
     let y = y / block_size;
 
     (x, y)
+}
+
+// Helper newtypes
+wrapper!(ImageCoord, u32);
+wrapper!(BlockCoord, u32);
+wrapper!(BlockSize, u32);
+
+use std::ops::{Div, Mul};
+impl Mul<BlockSize> for BlockCoord {
+    type Output = ImageCoord;
+
+    fn mul(self, other: BlockSize) -> ImageCoord {
+        ImageCoord(self.0 * other.0)
+    }
+}
+
+impl Div<BlockSize> for ImageCoord {
+    type Output = BlockCoord;
+
+    fn div(self, other: BlockSize) -> BlockCoord {
+        BlockCoord(self.0 / other.0)
+    }
+}
+
+impl BlockCoord {
+    fn saturating_sub(self, other: BlockCoord) -> BlockCoord {
+        BlockCoord(self.0.saturating_sub(other.0))
+    }
+}
+
+struct BlockCoordRangeInclusive {
+    current: u32,
+    end: u32,
+}
+
+impl Iterator for BlockCoordRangeInclusive {
+    type Item = BlockCoord;
+
+    fn next(&mut self) -> Option<BlockCoord> {
+        if self.current >= self.end {
+            None
+        } else {
+            self.current += 1;
+            Some(BlockCoord(self.current))
+        }
+    }
+}
+
+fn range(start: BlockCoord, end: BlockCoord) -> BlockCoordRangeInclusive {
+    BlockCoordRangeInclusive {
+        current: start.0,
+        end: end.0 - 1,
+    }
+}
+
+fn range_inc(start: BlockCoord, end: BlockCoord) -> BlockCoordRangeInclusive {
+    BlockCoordRangeInclusive {
+        current: start.0,
+        end: end.0,
+    }
 }
