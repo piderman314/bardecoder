@@ -77,7 +77,7 @@ impl Chomp {
         }
 
         if bit_count < self.bits_left_in_byte {
-            self.nibble(&bit_count)
+            self.nibble(bit_count)
         } else if bit_count == self.bits_left_in_byte {
             let mut result = 0;
 
@@ -85,7 +85,7 @@ impl Chomp {
                 result = *byte >> (8 - self.bits_left_in_byte.0);
             }
 
-            self.bits_left -= &self.bits_left_in_byte;
+            self.bits_left -= self.bits_left_in_byte;
             self.current_byte = self.bytes.next();
             self.bits_left_in_byte = if self.current_byte.is_some() {
                 BitCount(8)
@@ -96,31 +96,31 @@ impl Chomp {
             Some(result)
         } else {
             let mut result = 0;
-            let bits_to_go = bit_count - self.bits_left_in_byte.clone();
+            let bits_to_go = bit_count - self.bits_left_in_byte;
 
             if let Some(ref mut byte) = self.current_byte {
                 result = (*byte >> (8 - self.bits_left_in_byte.0)) << bits_to_go.0;
             }
 
-            self.bits_left -= &self.bits_left_in_byte;
+            self.bits_left -= self.bits_left_in_byte;
 
             self.bytes.peek()?;
 
             self.current_byte = self.bytes.next();
             self.bits_left_in_byte = BitCount(8);
 
-            let nibble = self.nibble(&bits_to_go).unwrap(); // we just peeked
+            let nibble = self.nibble(bits_to_go).unwrap(); // we just peeked
 
             Some(result + nibble)
         }
     }
 
-    fn nibble(&mut self, nr_bits: &BitCount) -> Option<u8> {
+    fn nibble(&mut self, nr_bits: BitCount) -> Option<u8> {
         if let Some(ref mut byte) = self.current_byte {
             let result = *byte >> (8 - nr_bits.0);
             *byte <<= nr_bits.0;
 
-            self.bits_left_in_byte -= &nr_bits;
+            self.bits_left_in_byte -= nr_bits;
 
             Some(result)
         } else {
