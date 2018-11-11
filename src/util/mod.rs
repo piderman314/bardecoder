@@ -1,8 +1,5 @@
 //! Various utilities to aid in decoding barcodes
 
-#[macro_use]
-pub mod macros;
-
 #[allow(unreadable_literal)]
 mod chomp;
 

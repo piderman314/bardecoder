@@ -156,9 +156,17 @@ fn as_block_coords(
 }
 
 // Helper newtypes
-wrapper!(ImageCoord, u32);
-wrapper!(BlockCoord, u32);
-wrapper!(BlockSize, u32);
+
+#[derive(Copy, Clone, Debug)]
+struct ImageCoord(u32);
+
+#[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Debug)]
+struct BlockCoord(u32);
+NewtypeAdd! { () struct BlockCoord(u32); }
+NewtypeMul! { () struct BlockCoord(u32); }
+
+#[derive(Copy, Clone, Debug)]
+struct BlockSize(u32);
 
 use std::ops::{Div, Mul};
 impl Mul<BlockSize> for BlockCoord {

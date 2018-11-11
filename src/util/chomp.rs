@@ -24,7 +24,11 @@ pub struct Chomp {
     bits_left_in_byte: BitCount,
 }
 
-wrapper!(BitCount, usize);
+#[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Debug)]
+struct BitCount(usize);
+
+NewtypeSub! { () struct BitCount(size); }
+NewtypeSubAssign! { () struct BitCount(size); }
 
 impl Chomp {
     /// Create a Chomp using the provided bytes

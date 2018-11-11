@@ -13,9 +13,8 @@ extern crate log;
 #[macro_use]
 extern crate failure_derive;
 
-// let util go first since it contains macros
 #[macro_use]
-pub mod util;
+extern crate newtype_derive;
 
 mod decoder;
 
@@ -23,6 +22,7 @@ pub mod decode;
 pub mod detect;
 pub mod extract;
 pub mod prepare;
+pub mod util;
 
 pub use decoder::{default_builder, default_decoder};
 pub use decoder::{Decoder, DecoderBuilder};
