@@ -1,7 +1,7 @@
 use super::galois::{EXP8, GF8};
 use super::BlockInfo;
 
-use util::qr::QRError;
+use crate::util::qr::QRError;
 
 use std::ops::{Div, Mul, Sub};
 

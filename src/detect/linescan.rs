@@ -4,8 +4,8 @@ use std::cmp::{max, min};
 use std::iter::repeat;
 use std::iter::Iterator;
 
-use util::qr::QRLocation;
-use util::Point;
+use crate::util::qr::QRLocation;
+use crate::util::Point;
 
 use image::GrayImage;
 

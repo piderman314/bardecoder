@@ -2,7 +2,7 @@
 
 use std::ops::Index;
 
-use util::Point;
+use crate::util::Point;
 
 /// Generic QR Error message. Can be converted into `failure::Error`
 #[derive(Fail, Debug, Clone, PartialEq)]

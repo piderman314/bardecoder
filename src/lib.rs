@@ -24,5 +24,5 @@ pub mod extract;
 pub mod prepare;
 pub mod util;
 
-pub use decoder::{default_builder, default_decoder};
-pub use decoder::{Decoder, DecoderBuilder};
+pub use crate::decoder::{default_builder, default_decoder};
+pub use crate::decoder::{Decoder, DecoderBuilder};

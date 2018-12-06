@@ -97,7 +97,7 @@ impl BlockedMean {
 
                 for x in range(x_start, x_end) {
                     for y in range(y_start, y_end) {
-                        let mut stats = &blocks[to_index((x, y), block_width)];
+                        let stats = &blocks[to_index((x, y), block_width)];
                         total += stats.total;
                         count += stats.count;
                     }
