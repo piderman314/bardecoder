@@ -3,7 +3,7 @@ use super::{BlockInfo, ECLevel, QRMask};
 
 use util::qr::{QRData, QRError};
 
-#[allow(borrowed_box)] // QRMask is a trait, unsure how to solve
+#[allow(clippy::borrowed_box)] // QRMask is a trait, unsure how to solve
 pub fn blocks(data: &QRData, level: &ECLevel, mask: &Box<QRMask>) -> Result<Vec<Vec<u8>>, QRError> {
     let bi = block_info(data.version, level)?;
     let mut codewords = Codewords::new(bi);

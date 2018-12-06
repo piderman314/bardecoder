@@ -1,7 +1,7 @@
 //! Barcode Decoder
 
 #![allow(unknown_lints)]
-#![allow(new_without_default_derive)]
+#![allow(clippy::new_without_default_derive)]
 #![warn(missing_docs)]
 
 extern crate failure;

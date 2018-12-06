@@ -1,6 +1,6 @@
 //! Various utilities to aid in decoding barcodes
 
-#[allow(unreadable_literal)]
+#[allow(clippy::unreadable_literal)]
 mod chomp;
 
 mod point;
