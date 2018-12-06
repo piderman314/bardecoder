@@ -24,9 +24,9 @@ pub fn data(input: Vec<u8>, version: u32) -> Result<String, QRError> {
 
 fn numeric(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
     let length_bits = match version {
-        1...9 => 10,
-        10...26 => 12,
-        27...40 => 14,
+        1..=9 => 10,
+        10..=26 => 12,
+        27..=40 => 14,
         _ => {
             return Err(QRError {
                 msg: format!("Unknown version {}", version),
@@ -80,9 +80,9 @@ const ALPHANUMERIC: [char; 45] = [
 
 fn alphanumeric(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
     let length_bits = match version {
-        1...9 => 9,
-        10...26 => 11,
-        27...40 => 13,
+        1..=9 => 9,
+        10..=26 => 11,
+        27..=40 => 13,
         _ => {
             return Err(QRError {
                 msg: format!("Unknown version {}", version),
@@ -127,9 +127,9 @@ fn alphanumeric(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
 
 fn eight_bit(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
     let length_bits = match version {
-        1...9 => 8,
-        10...26 => 16,
-        27...40 => 16,
+        1..=9 => 8,
+        10..=26 => 16,
+        27..=40 => 16,
         _ => {
             return Err(QRError {
                 msg: format!("Unknown version {}", version),

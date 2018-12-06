@@ -1,6 +1,6 @@
-extern crate bardecoder;
-extern crate failure;
-extern crate image;
+use bardecoder;
+
+use image;
 
 use failure::Error;
 

@@ -4,8 +4,8 @@
 #![allow(clippy::new_without_default_derive)]
 #![warn(missing_docs)]
 
-extern crate failure;
-extern crate image;
+use failure;
+
 
 #[macro_use]
 extern crate log;
