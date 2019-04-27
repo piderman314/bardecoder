@@ -1,11 +1,10 @@
 //! Barcode Decoder
 
 #![allow(unknown_lints)]
-#![allow(clippy::new_without_default_derive)]
+#![allow(clippy::new_without_default)]
 #![warn(missing_docs)]
 
 use failure;
-
 
 #[macro_use]
 extern crate log;
