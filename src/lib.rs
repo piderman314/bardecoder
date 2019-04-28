@@ -3,6 +3,7 @@
 #![allow(unknown_lints)]
 #![allow(clippy::new_without_default)]
 #![warn(missing_docs)]
+#![cfg_attr(feature = "fail-on-warnings", deny(warnings))]
 
 use failure;
 
