@@ -15,9 +15,16 @@ use image::{DynamicImage, Rgb};
 #[cfg(feature = "debug-images")]
 use std::{env::temp_dir, fs::create_dir_all};
 
+/// Scan a prepared image for QR Codes
+///
+/// The general idea of this method is as follows:
+/// 1. Scan line by line horizontally for possible QR Finder patterns (the three squares)
+/// 2. If a possible pattern is found, check vertically and diagonally to confirm it is indeed a pattern
+/// 3. Try to find combinations of three patterns that are perpendicular and with similar distance that form a complete QR Code
 pub struct LineScan {}
 
 impl LineScan {
+    /// Constuct a new LineScan
     pub fn new() -> LineScan {
         LineScan {}
     }
@@ -40,16 +47,21 @@ impl Detect<GrayImage> for LineScan {
         let mut last_pixel = 127;
         let mut pattern = QRFinderPattern::new();
         'pixels: for (x, y, p) in threshold.enumerate_pixels() {
+            // Step 1
+            // A new line, construct a new QRFinderPattern
             if x == 0 {
                 last_pixel = 127;
                 pattern = QRFinderPattern::new();
             }
 
+            // A pixel of the same color, add to the count in the last position
             if p.data[0] == last_pixel {
                 pattern.6 += 1;
                 continue 'pixels;
             }
 
+            // A pixel color switch, but the current pattern does not look like a finder
+            // Slide the pattern and continue searching
             if !pattern.looks_like_finder() {
                 last_pixel = p.data[0];
                 pattern.slide();
@@ -58,6 +70,7 @@ impl Detect<GrayImage> for LineScan {
 
             let mut module_size = pattern.est_mod_size();
 
+            // A finder pattern is 1-1-3-1-1 modules wide, so subtract 3.5 modules to get the x coordinate in the center
             let mut finder = Point {
                 x: f64::from(x) - module_size * 3.5,
                 y: f64::from(y),
@@ -65,6 +78,7 @@ impl Detect<GrayImage> for LineScan {
 
             for candidate in &candidates {
                 if dist(&finder, &candidate.location) < 7.0 * module_size {
+                    // The candidate location we have found was already detected and stored on a previous line.
                     last_pixel = p.data[0];
                     pattern.slide();
 
@@ -72,6 +86,8 @@ impl Detect<GrayImage> for LineScan {
                 }
             }
 
+            // Step 2
+            // Run the refinement functions on the candidate location
             for (refine_func, dx, dy) in &refine_func {
                 let vert = refine_func(&self, threshold, &finder, module_size);
 
@@ -82,6 +98,7 @@ impl Detect<GrayImage> for LineScan {
                     continue 'pixels;
                 }
 
+                // Adjust the candidate location with the refined candidate and module size
                 let vert = vert.unwrap();
                 let half_finder = 3.5 * vert.last_module_size;
                 finder.x = vert.location.x - dx * half_finder;
@@ -101,6 +118,7 @@ impl Detect<GrayImage> for LineScan {
 
         debug!("Candidate QR Locators {:#?}", candidates);
 
+        // Output a debug image by drawing red squares around all candidate locations
         #[cfg(feature = "debug-images")]
         {
             #[cfg(feature = "debug-images")]
@@ -140,6 +158,8 @@ impl Detect<GrayImage> for LineScan {
 
         let max_candidates = candidates.len();
 
+        // Step 3
+        // Loop through all candidates to see if any combination results in an actual QR
         for candidate1 in 0..max_candidates {
             for candidate2 in candidate1 + 1..max_candidates {
                 let diff1 = diff(
@@ -182,42 +202,49 @@ impl Detect<GrayImage> for LineScan {
 }
 
 impl LineScan {
+    // Refine horizontally
     fn refine_horizontal(
         &self,
         threshold: &GrayImage,
         finder: &Point,
         module_size: f64,
     ) -> Option<QRFinderPosition> {
+        // Bound x range to image dimensions
         let start_x = max(0, (finder.x - 5.0 * module_size).round() as u32);
         let end_x = min(
             (finder.x + 5.0 * module_size).round() as u32,
             threshold.dimensions().0,
         );
 
+        // Range in x direction, y is constant
         let range_x = start_x..end_x;
         let range_y = repeat(finder.y.round() as u32);
 
         self.refine(threshold, module_size, range_x, range_y)
     }
 
+    // Refine vertically
     fn refine_vertical(
         &self,
         threshold: &GrayImage,
         finder: &Point,
         module_size: f64,
     ) -> Option<QRFinderPosition> {
+        // Bound y range to image dimensions
         let start_y = max(0, (finder.y - 5.0 * module_size).round() as u32);
         let end_y = min(
             (finder.y + 5.0 * module_size).round() as u32,
             threshold.dimensions().1,
         );
 
+        // X is constant, range in y direction
         let range_x = repeat(finder.x.round() as u32);
         let range_y = start_y..end_y;
 
         self.refine(threshold, module_size, range_x, range_y)
     }
 
+    // Refine diagonally
     fn refine_diagonal(
         &self,
         threshold: &GrayImage,
@@ -227,6 +254,9 @@ impl LineScan {
         let side = 5.0 * module_size;
         let mut start_x = 0.0;
         let mut start_y = 0.0;
+
+        // Bound both x and y ranges to image dimensions
+        // Make sure not to do it independently so that the ranges keep being diagonal
         if finder.x < side && finder.y < side {
             if finder.x < finder.y {
                 start_y = finder.y - finder.x;
@@ -242,6 +272,7 @@ impl LineScan {
             start_y = finder.y - side;
         }
 
+        // Ranges in both x and y directions
         let range_x = start_x.round() as u32
             ..min(
                 (finder.x + 5.0 * module_size).round() as u32,
@@ -267,11 +298,15 @@ impl LineScan {
         let mut pattern = QRFinderPattern::new();
         let mut last_x = 0;
         let mut last_y = 0;
+
+        // Loop over provided range and basically execute the same logic as above
         for (x, y) in range_x.zip(range_y) {
             let p = threshold.get_pixel(x, y)[0];
             if p == last_pixel {
                 pattern.6 += 1;
             } else {
+                // The current pattern needs to look like a finder (1-1-3-1-1)
+                // Also the module size needs to be similar to the candidate we are refining
                 if pattern.looks_like_finder() && diff(module_size, pattern.est_mod_size()) < 0.2 {
                     let new_est_mod_size = (module_size + pattern.est_mod_size()) / 2.0;
                     return Some(QRFinderPosition {
@@ -292,6 +327,8 @@ impl LineScan {
             last_y = y;
         }
 
+        // The current pattern needs to look like a finder (1-1-3-1-1)
+        // Also the module size needs to be similar to the candidate we are refining
         if pattern.looks_like_finder() && diff(module_size, pattern.est_mod_size()) < 0.2 {
             let new_est_mod_size = (module_size + pattern.est_mod_size()) / 2.0;
             return Some(QRFinderPosition {
@@ -345,6 +382,7 @@ impl QRFinderPattern {
         f64::from(self.2 + self.3 + self.4 + self.5 + self.6) / 7.0
     }
 
+    // Determine if the candidate looks like a finder, with about 1-1-3-1-1 ratios
     fn looks_like_finder(&self) -> bool {
         let total_size = self.2 + self.3 + self.4 + self.5 + self.6;
 
@@ -396,6 +434,7 @@ fn dist(one: &Point, other: &Point) -> f64 {
 
 #[inline]
 fn find_qr(one: &Point, two: &Point, three: &Point, module_size: f64) -> Option<QRLocation> {
+    // Try all three combinations of points to see if any of them are a QR
     if let Some(qr) = find_qr_internal(one, two, three, module_size) {
         return Some(qr);
     } else if let Some(qr) = find_qr_internal(two, one, three, module_size) {
@@ -425,6 +464,7 @@ fn find_qr_internal(
 
     trace!("DIFF {}", diff(len_a, len_b));
 
+    // The distance between the two finders needs to be similar
     if diff(len_a, len_b) > 0.06 {
         return None;
     }
@@ -433,18 +473,22 @@ fn find_qr_internal(
 
     trace!("PERPENDICULAR {}", perpendicular);
 
+    // The two sides need to be perpendicular
     if (perpendicular.abs() - 1.0).abs() > 0.05 {
         return None;
     }
 
+    // Estimate distance between finders, in module count
     let mut dist = ((dist(one, three) / module_size) + 7.0) as u32;
 
     trace!("DIST {}", dist);
 
+    // QR codes are at least 21 modules wide so discard any that are smaller
     if dist < 20 {
         return None;
     }
 
+    // Since the distance in modules between finders needs to be a multiple of 4 plus one, adjust our estimate if it doesn't conform
     dist = match dist % 4 {
         0 => dist + 1,
         1 => dist,
@@ -453,6 +497,7 @@ fn find_qr_internal(
         _ => return None,
     };
 
+    // QR might be mirrored, in that case store the finders the other way around
     if perpendicular > 0.0 {
         Some(QRLocation {
             top_left: *one,
