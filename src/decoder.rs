@@ -10,6 +10,7 @@ use crate::prepare::{BlockedMean, Prepare};
 
 use crate::util::qr::{QRData, QRError, QRLocation};
 
+/// Struct to hold logic to do the entire decoding
 pub struct Decoder<IMG, PREPD> {
     prepare: Box<dyn Prepare<IMG, PREPD>>,
     detect: Box<dyn Detect<PREPD>>,
@@ -17,6 +18,12 @@ pub struct Decoder<IMG, PREPD> {
 }
 
 impl<IMG, PREPD> Decoder<IMG, PREPD> {
+    /// Do the actual decoding
+    ///
+    /// Logic is run in the following order:
+    /// * prepare
+    /// * detect
+    /// * per detected code the associated extract and decode functions
     pub fn decode(&self, source: IMG) -> Vec<Result<String, Error>> {
         let prepared = self.prepare.prepare(source);
         let locations = self.detect.detect(&prepared);
