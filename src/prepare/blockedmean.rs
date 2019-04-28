@@ -4,12 +4,25 @@ use image::{DynamicImage, GrayImage};
 
 use std::cmp::{max, min};
 
+/// Reduce the image to black/white by calculating local thresholds
+///
+/// The algorithm runs the following steps:
+/// 1. Divide the image into blocks and count the cumulative grayscale value of all pixels in the block
+/// 2. For each block of blocks, take mean grayscale value by adding each block's value and dividing by total number of pixels
+/// 3. For each pixel in the image, see if the grayscale value of that pixel exceeds the mean of its corresponding block.
+///    If so, output a white pixel. If not, output a black pixel
 pub struct BlockedMean {
     block_size: BlockSize,
     block_mean_size: BlockSize,
 }
 
 impl BlockedMean {
+    /// Construct a new BlockedMean
+    ///
+    /// # Arguments
+    ///
+    /// * `block_size`: width in pixels of each block
+    /// * `block_mean_size`: width in blocks of each block of blocks
     pub fn new(block_size: u32, block_mean_size: u32) -> BlockedMean {
         BlockedMean {
             block_size: BlockSize(block_size),
@@ -97,6 +110,9 @@ impl BlockedMean {
 
                 for x in range(x_start, x_end) {
                     for y in range(y_start, y_end) {
+                        // Make sure to take the pixel counts from each of the blocks directly
+                        // Because the size of the image does not have to be an exact multiple of the size in blocks,
+                        // some blocks can have differing pixel counts
                         let stats = &blocks[to_index((x, y), block_width)];
                         total += stats.total;
                         count += stats.count;
