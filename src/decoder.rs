@@ -80,6 +80,7 @@ impl<IMG, PREPD> DecoderBuilder<IMG, PREPD> {
         }
     }
 
+    /// Set the prepare implementation for this Decoder
     pub fn prepare(
         &mut self,
         prepare: Box<dyn Prepare<IMG, PREPD>>,
@@ -88,11 +89,13 @@ impl<IMG, PREPD> DecoderBuilder<IMG, PREPD> {
         self
     }
 
+    /// Set the detect implementation for this Decoder
     pub fn detect(&mut self, detect: Box<dyn Detect<PREPD>>) -> &mut DecoderBuilder<IMG, PREPD> {
         self.detect = Some(detect);
         self
     }
 
+    /// Set the extact and decode implementations for this Decoder for QR codes
     pub fn qr(
         &mut self,
         extract: Box<dyn Extract<PREPD, QRLocation, QRData, QRError>>,
