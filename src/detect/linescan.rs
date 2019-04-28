@@ -318,6 +318,10 @@ impl QRFinderPattern {
 
     fn slide(&mut self) {
         if f64::from(self.6) < f64::from(self.5) / 10.0 {
+            // we slid last time because the pixels inverted,
+            // but it turned out that it was only for a few pixels
+            // likely it was just some noise in the image
+            // so revert the previous slide call and add the noise to the previous pattern
             self.6 += self.5;
             self.5 = self.4;
             self.4 = self.3;
@@ -326,6 +330,7 @@ impl QRFinderPattern {
             self.1 = self.0;
             self.0 = 0;
         } else {
+            // the pixels inverted so slide the pattern down and start a new count in the last position
             self.0 = self.1;
             self.1 = self.2;
             self.2 = self.3;
