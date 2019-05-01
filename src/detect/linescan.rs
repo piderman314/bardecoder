@@ -33,7 +33,7 @@ impl LineScan {
 type Refine = dyn Fn(&LineScan, &GrayImage, &Point, f64) -> Option<QRFinderPosition>;
 
 impl Detect<GrayImage> for LineScan {
-    fn detect(&self, threshold: &GrayImage) -> Vec<Location> {
+    fn detect(&self, prepared: &GrayImage) -> Vec<Location> {
         // The order of refinement is important.
         // The candidate is found in horizontal direction, so the first refinement is vertical
         let refine_func: Vec<(Box<Refine>, f64, f64)> = vec![
@@ -46,7 +46,7 @@ impl Detect<GrayImage> for LineScan {
 
         let mut last_pixel = 127;
         let mut pattern = QRFinderPattern::new();
-        'pixels: for (x, y, p) in threshold.enumerate_pixels() {
+        'pixels: for (x, y, p) in prepared.enumerate_pixels() {
             // Step 1
             // A new line, construct a new QRFinderPattern
             if x == 0 {
@@ -89,7 +89,7 @@ impl Detect<GrayImage> for LineScan {
             // Step 2
             // Run the refinement functions on the candidate location
             for (refine_func, dx, dy) in &refine_func {
-                let vert = refine_func(&self, threshold, &finder, module_size);
+                let vert = refine_func(&self, prepared, &finder, module_size);
 
                 if vert.is_none() {
                     last_pixel = p.data[0];
@@ -122,7 +122,7 @@ impl Detect<GrayImage> for LineScan {
         #[cfg(feature = "debug-images")]
         {
             #[cfg(feature = "debug-images")]
-            let mut img = DynamicImage::ImageLuma8(threshold.clone()).to_rgb();
+            let mut img = DynamicImage::ImageLuma8(prepared.clone()).to_rgb();
 
             for c in candidates.iter() {
                 let loc = c.location;
@@ -205,7 +205,7 @@ impl LineScan {
     // Refine horizontally
     fn refine_horizontal(
         &self,
-        threshold: &GrayImage,
+        prepared: &GrayImage,
         finder: &Point,
         module_size: f64,
     ) -> Option<QRFinderPosition> {
@@ -213,20 +213,20 @@ impl LineScan {
         let start_x = max(0, (finder.x - 5.0 * module_size).round() as u32);
         let end_x = min(
             (finder.x + 5.0 * module_size).round() as u32,
-            threshold.dimensions().0,
+            prepared.dimensions().0,
         );
 
         // Range in x direction, y is constant
         let range_x = start_x..end_x;
         let range_y = repeat(finder.y.round() as u32);
 
-        self.refine(threshold, module_size, range_x, range_y)
+        self.refine(prepared, module_size, range_x, range_y)
     }
 
     // Refine vertically
     fn refine_vertical(
         &self,
-        threshold: &GrayImage,
+        prepared: &GrayImage,
         finder: &Point,
         module_size: f64,
     ) -> Option<QRFinderPosition> {
@@ -234,20 +234,20 @@ impl LineScan {
         let start_y = max(0, (finder.y - 5.0 * module_size).round() as u32);
         let end_y = min(
             (finder.y + 5.0 * module_size).round() as u32,
-            threshold.dimensions().1,
+            prepared.dimensions().1,
         );
 
         // X is constant, range in y direction
         let range_x = repeat(finder.x.round() as u32);
         let range_y = start_y..end_y;
 
-        self.refine(threshold, module_size, range_x, range_y)
+        self.refine(prepared, module_size, range_x, range_y)
     }
 
     // Refine diagonally
     fn refine_diagonal(
         &self,
-        threshold: &GrayImage,
+        prepared: &GrayImage,
         finder: &Point,
         module_size: f64,
     ) -> Option<QRFinderPosition> {
@@ -276,20 +276,20 @@ impl LineScan {
         let range_x = start_x.round() as u32
             ..min(
                 (finder.x + 5.0 * module_size).round() as u32,
-                threshold.dimensions().0,
+                prepared.dimensions().0,
             );
         let range_y = start_y.round() as u32
             ..min(
                 (finder.y + 5.0 * module_size).round() as u32,
-                threshold.dimensions().1,
+                prepared.dimensions().1,
             );
 
-        self.refine(threshold, module_size, range_x, range_y)
+        self.refine(prepared, module_size, range_x, range_y)
     }
 
     fn refine(
         &self,
-        threshold: &GrayImage,
+        prepared: &GrayImage,
         module_size: f64,
         range_x: impl Iterator<Item = u32>,
         range_y: impl Iterator<Item = u32>,
@@ -301,7 +301,7 @@ impl LineScan {
 
         // Loop over provided range and basically execute the same logic as above
         for (x, y) in range_x.zip(range_y) {
-            let p = threshold.get_pixel(x, y)[0];
+            let p = prepared.get_pixel(x, y)[0];
             if p == last_pixel {
                 pattern.6 += 1;
             } else {

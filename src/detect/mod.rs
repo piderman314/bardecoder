@@ -6,7 +6,7 @@ use crate::util::qr::QRLocation;
 
 /// Detect barcode in a prepared image
 ///
-/// PREP type should be the type if the image returned from the [`Prepare`] implementation
+/// PREPD type should be the type if the image returned from the [`Prepare`] implementation
 ///
 /// Pre-implemented Extracts provided by this library that are included in the default [`Detect`]:
 /// * [`LineScan`]
@@ -22,7 +22,7 @@ use crate::util::qr::QRLocation;
 /// struct MyDetector {}
 ///
 /// impl Detect<GrayImage> for MyDetector {
-///     fn detect(&self, threshold: &GrayImage) -> Vec<Location> {
+///     fn detect(&self, prepared: &GrayImage) -> Vec<Location> {
 ///         // detect codes here
 /// #       vec![]
 ///     }
@@ -36,9 +36,9 @@ use crate::util::qr::QRLocation;
 /// [`Decoder`]: ../struct.Decoder.html
 /// [`Prepare`]: ../prepare/trait.Prepare.html
 /// [`here`]: ../detect/trait.Detect.html
-pub trait Detect<PREP> {
+pub trait Detect<PREPD> {
     /// Does the actual detecting
-    fn detect(&self, threshold: &PREP) -> Vec<Location>;
+    fn detect(&self, prepared: &PREPD) -> Vec<Location>;
 }
 
 mod linescan;

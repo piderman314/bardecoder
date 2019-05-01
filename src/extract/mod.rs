@@ -8,7 +8,7 @@ pub use self::qr::QRExtractor;
 
 /// Extract data from a prepared image, given the location as determined by the [`Detect`] step
 ///
-/// PREP type should be the type if the image returned from the [`Prepare`] implementation
+/// PREPD type should be the type if the image returned from the [`Prepare`] implementation
 /// LOC type should be the relevant enclosed type from the [`Location`] enum
 /// DATA type must equal the input type of the matching [`Decode`] implementation
 ///
@@ -26,7 +26,7 @@ pub use self::qr::QRExtractor;
 /// struct MyExtractor {}
 ///
 /// impl Extract<GrayImage, QRLocation, QRData, QRError> for MyExtractor {
-///     fn extract(&self, threshold: &GrayImage, loc: QRLocation) -> Result<QRData, QRError> {
+///     fn extract(&self, prepared: &GrayImage, loc: QRLocation) -> Result<QRData, QRError> {
 ///         // extract data here
 /// #        Ok(QRData::new(vec![], 0))
 ///     }
@@ -41,10 +41,10 @@ pub use self::qr::QRExtractor;
 /// [`Detect`]: ../detect/trait.Detect.html
 /// [`Prepare`]: ../prepare/trait.Prepare.html
 /// [`here`]: ../decode/trait.Decode.html
-pub trait Extract<PREP, LOC, DATA, ERROR>
+pub trait Extract<PREPD, LOC, DATA, ERROR>
 where
     ERROR: Fail,
 {
     /// Does the actual extracting
-    fn extract(&self, threshold: &PREP, loc: LOC) -> Result<DATA, ERROR>;
+    fn extract(&self, prepared: &PREPD, loc: LOC) -> Result<DATA, ERROR>;
 }
