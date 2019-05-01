@@ -138,4 +138,8 @@ Though this library can handle all sorts of QR images, here are some tips for op
 
 ## Support
 
+If you find an image with a QR code that this library is unable to decode, please raise an [Issue](https://github.com/piderman314/bardecoder/issues). Please include the image and the code you are trying to decode it with (especially when using the [Modified](#modified) method). I will try my best improve the algorithm though I cannot 100% guarantee that I will succeed, especially with more esoteric QR codes.
+
 ## Contributing
+
+If you find a small bug and manage to fix it yourself, please feel free to submit a pull request. For larger refactorings and more fundamental issues please submit a [ticket](https://github.com/piderman314/bardecoder/issues) outlining the problem and potential solution.
