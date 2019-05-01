@@ -16,6 +16,8 @@ Detect and decode QR Codes, written in 100% Rust.
 
 ## Background
 
+This library came about after perusing the [Not Yet Awesome Rust](https://github.com/not-yet-awesome-rust/not-yet-awesome-rust) list. It strives to be modular so algorithms with different strengths, speeds and robustness can be used interchangeably.
+
 ## How to use
 
 ### Quick
