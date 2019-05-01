@@ -125,6 +125,12 @@ fn main() {
 
 ## Features
 
+`Bardecoder` exposes the following features for use in your project:
+
+* `debug-images` : Some of the default components will output debug images in the  `<tmp>/bardecoder-debug-images` folder, where `<tmp>` is the default OS temp folder. This can help show visually what the algorithms are doing. Be aware that some of the components (for example `QRExtractor`) output a *lot* of images so definitely do not use this feature other than to have a look what is happening when things are going wrong.
+
+* `fail-on-warnings` : if you fancy that sort of thing, though its purpose is mostly for `travis-ci`.
+
 ## Support
 
 ## Contributing
