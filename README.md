@@ -122,6 +122,11 @@ fn main() {
 ```
 
 ## Tips
+Though this library can handle all sorts of QR images, here are some tips for optimal results:
+
+* Keep the resolution of the source image low-ish, say between 400x300 and 800x600 pixels. Any higher and it takes quite long to detect any codes.
+* Keep the QR code centered and zoomed in.
+* Keep the QR code free of errors, deliberate or otherwise. While QR codes are self-correcting, the actual correction is not cheap. However before starting that process it is easy to detect that a QR code is error free so in that case an early exit is taken.
 
 ## Features
 
