@@ -9,7 +9,7 @@ repository = "https://github.com/piderman314/bardecoder"
 homepage = "https://github.com/piderman314/bardecoder"
 keywords = ["qr"]
 categories = ["encoding","multimedia::images"]
-exclude = ["/.travis.yml"]
+exclude = ["/.travis.yml", "/tests/*"]
 description = """
 Detect and decode QR Codes
 """
