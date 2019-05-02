@@ -12,13 +12,20 @@ Detect and decode QR Codes, written in 100% Rust.
 * [Support](#support)
 * [Contributing](#contributing)
 
-[![Travis Build](https://travis-ci.com/piderman314/bardecoder.svg?branch=master)](https://travis-ci.com/piderman314/bardecoder) [![License](https://img.shields.io/github/license/piderman314/bardecoder.svg?color=success)](https://github.com/piderman314/bardecoder/blob/master/LICENSE)
+[![Travis Build](https://travis-ci.com/piderman314/bardecoder.svg?branch=master)](https://travis-ci.com/piderman314/bardecoder) [![License](https://img.shields.io/github/license/piderman314/bardecoder.svg?color=success)](https://github.com/piderman314/bardecoder/blob/master/LICENSE) [![Rustc version](https://img.shields.io/badge/rustc-1.34%2B-informational.svg)](https://www.rust-lang.org/)
 
 ## Background
 
 This library came about after perusing the [Not Yet Awesome Rust](https://github.com/not-yet-awesome-rust/not-yet-awesome-rust) list. It strives to be modular so algorithms with different strengths, speeds and robustness can be used interchangeably.
 
 ## How to use
+
+Add the following to your `Cargo.toml`:
+
+``` toml
+[dependencies]
+bardecoder = "0.1"
+```
 
 ### Quick
 The quickest way to integrate is to use the built-in default decoder. This will work for the vast majority of cases, though please keep in mind the [Tips](#tips) below.
