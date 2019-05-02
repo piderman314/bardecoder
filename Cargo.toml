@@ -3,6 +3,16 @@ name = "bardecoder"
 version = "0.1.0"
 authors = ["Mark Arts <piderman+github@gmail.com>"]
 edition = "2018"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/piderman314/bardecoder"
+homepage = "https://github.com/piderman314/bardecoder"
+keywords = ["qr"]
+categories = ["encoding","multimedia::images"]
+exclude = ["/.travis.yml"]
+description = """
+Detect and decode QR Codes
+"""
 
 [dependencies]
 image = "0.21"
@@ -16,3 +26,6 @@ default=[]
 debug-images=[]
 fail-on-warnings=[]
 benchmark=[]
+
+[badges]
+travis-ci = { repository = "piderman314/bardecoder" }
