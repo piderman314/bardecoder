@@ -12,7 +12,11 @@ Detect and decode QR Codes, written in 100% Rust.
 * [Support](#support)
 * [Contributing](#contributing)
 
-[![Travis Build](https://travis-ci.com/piderman314/bardecoder.svg?branch=master)](https://travis-ci.com/piderman314/bardecoder) [![License](https://img.shields.io/github/license/piderman314/bardecoder.svg?color=success)](https://github.com/piderman314/bardecoder/blob/master/LICENSE) [![Rustc version](https://img.shields.io/badge/rustc-1.34%2B-informational.svg)](https://www.rust-lang.org/)
+[![Travis Build](https://travis-ci.com/piderman314/bardecoder.svg?branch=master)](https://travis-ci.com/piderman314/bardecoder)
+[![License](https://img.shields.io/github/license/piderman314/bardecoder.svg?color=success)](https://github.com/piderman314/bardecoder/blob/master/LICENSE)
+[![Crates.io](https://img.shields.io/crates/v/bardecoder.svg)](https://crates.io/crates/bardecoder)
+[![docs.rs](https://docs.rs/bardecoder/badge.svg)](https://docs.rs/bardecoder)
+[![Rustc version](https://img.shields.io/badge/rustc-1.34%2B-informational.svg)](https://www.rust-lang.org/)
 
 ## Background
 
