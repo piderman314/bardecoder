@@ -123,9 +123,9 @@ fn determine_perspective(
 
     let mut found = false;
 
-    'distance: for i in (0..4).rev() {
-        'scale: for j in -2..3 {
-            let scale = 1.0 + (f64::from(j) / 10.0);
+    'distance: for i in 0..4 {
+        'scale: for j in &[0, 1, -1, 2, -2, 3] {
+            let scale = 1.0 + (f64::from(*j) / 10.0);
 
             if i == 0 {
                 if is_alignment(prepared, est_alignment, dx, dy, scale) {
@@ -169,6 +169,49 @@ fn determine_perspective(
             }
         }
     }
+
+    let al_x = est_alignment.x.round() as u32;
+    let al_y = est_alignment.y.round() as u32;
+    let mut left_x = 0;
+    let mut right_x = prepared.dimensions().0;
+    for x in (0..al_x).rev() {
+        if prepared.get_pixel(x, al_y)[0] == 255 {
+            left_x = x;
+            break;
+        }
+    }
+
+    for x in al_x..prepared.dimensions().0 {
+        if prepared.get_pixel(x, al_y)[0] == 255 {
+            right_x = x;
+            break;
+        }
+    }
+
+    debug!("LEFT X {} RIGHT X {}", left_x, right_x);
+    est_alignment.x = (f64::from(left_x) + f64::from(right_x)) / 2.0;
+
+    let al_x = est_alignment.x.round() as u32;
+    let al_y = est_alignment.y.round() as u32;
+    let mut top_y = 0;
+    let mut bottom_y = prepared.dimensions().1;
+
+    for y in (0..al_y).rev() {
+        if prepared.get_pixel(al_x, y)[0] == 255 {
+            top_y = y;
+            break;
+        }
+    }
+
+    for y in al_y..prepared.dimensions().1 {
+        if prepared.get_pixel(al_x, y)[0] == 255 {
+            bottom_y = y;
+            break;
+        }
+    }
+
+    debug!("TOP Y {} BOTTOM Y {}", top_y, bottom_y);
+    est_alignment.y = (f64::from(top_y) + f64::from(bottom_y)) / 2.0;
 
     if !found {
         return Err(QRError {
