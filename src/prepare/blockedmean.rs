@@ -140,7 +140,15 @@ impl BlockedMean {
 
             let mean = block_means[to_index(coords, block_width)].mean;
 
-            p.data[0] = if f64::from(p.data[0]) > mean { 255 } else { 0 };
+            p.data[0] = if mean > 250.0 {
+                255
+            } else if mean < 5.0 {
+                0
+            } else if f64::from(p.data[0]) > mean {
+                255
+            } else {
+                0
+            };
         }
 
         grayscale
