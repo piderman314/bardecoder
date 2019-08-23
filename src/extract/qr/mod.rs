@@ -62,7 +62,7 @@ impl Extract<GrayImage, QRLocation, QRData, QRError> for QRExtractor {
                     if pixel == 0 {
                         for i in max(0, x.saturating_sub(2))..min(img.dimensions().0, x + 2) {
                             for j in max(0, y.saturating_sub(2))..min(img.dimensions().0, y + 2) {
-                                img.put_pixel(i, j, Rgb { data: [255, 0, 0] });
+                                img.put_pixel(i, j, Rgb([255, 0, 0]));
                             }
                         }
                     }
@@ -240,7 +240,7 @@ fn determine_perspective(
                     continue;
                 }
 
-                img.put_pixel(x, y, Rgb { data: [255, 0, 0] });
+                img.put_pixel(x, y, Rgb([255, 0, 0]));
             }
         }
 
@@ -283,11 +283,7 @@ fn is_alignment(prepared: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f64
         for i in -2..3 {
             for j in -2..3 {
                 let pp = p + f64::from(i) * dx + f64::from(j) * dy;
-                img.put_pixel(
-                    pp.x.round() as u32,
-                    pp.y.round() as u32,
-                    Rgb { data: [255, 0, 0] },
-                );
+                img.put_pixel(pp.x.round() as u32, pp.y.round() as u32, Rgb([255, 0, 0]));
             }
         }
 
