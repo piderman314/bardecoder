@@ -13,6 +13,14 @@ pub fn test_version1_example() {
 }
 
 #[test]
+pub fn test_version1_example_no_border() {
+    test_image(
+        "tests/images/version1_example_no_border.png",
+        vec![Ok(String::from("Ver1"))],
+    );
+}
+
+#[test]
 pub fn test_version1_example_upside_down() {
     test_image(
         "tests/images/version1_example_upside_down.jpg",
