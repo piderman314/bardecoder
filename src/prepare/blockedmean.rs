@@ -1,5 +1,6 @@
 use super::Prepare;
 
+use image::Pixel;
 use image::{DynamicImage, GrayImage};
 
 use std::cmp::{max, min};
@@ -68,7 +69,7 @@ impl BlockedMean {
             let coords = as_block_coords(ImageCoord(x), ImageCoord(y), self.block_size);
             let mut stats = &mut blocks[to_index(coords, block_width)];
 
-            stats.total += u64::from(p.data[0]);
+            stats.total += u64::from(p.channels()[0]);
             stats.count += 1;
         }
 
@@ -140,11 +141,11 @@ impl BlockedMean {
 
             let mean = block_means[to_index(coords, block_width)].mean;
 
-            p.data[0] = if mean > 250.0 {
+            p.channels_mut()[0] = if mean > 250.0 {
                 255
             } else if mean < 5.0 {
                 0
-            } else if f64::from(p.data[0]) > mean {
+            } else if f64::from(p.channels()[0]) > mean {
                 255
             } else {
                 0

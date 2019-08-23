@@ -15,11 +15,11 @@ Detect and decode QR Codes
 """
 
 [dependencies]
-image = "0.21"
-log = "0.4"
-failure = "0.1"
-failure_derive = "0.1"
-newtype_derive = "0.1"
+image = "0.22.1"
+log = "0.4.8"
+failure = "0.1.5"
+failure_derive = "0.1.5"
+newtype_derive = "0.1.6"
 
 [features]
 default=[]

@@ -8,6 +8,7 @@ use crate::util::qr::QRLocation;
 use crate::util::Point;
 
 use image::GrayImage;
+use image::Pixel;
 
 #[cfg(feature = "debug-images")]
 use image::{DynamicImage, Rgb};
@@ -55,7 +56,7 @@ impl Detect<GrayImage> for LineScan {
             }
 
             // A pixel of the same color, add to the count in the last position
-            if p.data[0] == last_pixel {
+            if p.channels()[0] == last_pixel {
                 pattern.6 += 1;
 
                 if x != prepared.dimensions().0 - 1 {
@@ -66,7 +67,7 @@ impl Detect<GrayImage> for LineScan {
             // A pixel color switch, but the current pattern does not look like a finder
             // Slide the pattern and continue searching
             if !pattern.looks_like_finder() {
-                last_pixel = p.data[0];
+                last_pixel = p.channels()[0];
                 pattern.slide();
                 continue 'pixels;
             }
@@ -82,7 +83,7 @@ impl Detect<GrayImage> for LineScan {
             for candidate in &candidates {
                 if dist(&finder, &candidate.location) < 7.0 * module_size {
                     // The candidate location we have found was already detected and stored on a previous line.
-                    last_pixel = p.data[0];
+                    last_pixel = p.channels()[0];
                     pattern.slide();
 
                     continue 'pixels;
@@ -95,7 +96,7 @@ impl Detect<GrayImage> for LineScan {
                 let vert = refine_func(&self, prepared, &finder, module_size);
 
                 if vert.is_none() {
-                    last_pixel = p.data[0];
+                    last_pixel = p.channels()[0];
                     pattern.slide();
 
                     continue 'pixels;
@@ -115,7 +116,7 @@ impl Detect<GrayImage> for LineScan {
                 last_module_size: 0.0,
             });
 
-            last_pixel = p.data[0];
+            last_pixel = p.channels()[0];
             pattern.slide();
         }
 
@@ -439,13 +440,13 @@ fn dist(one: &Point, other: &Point) -> f64 {
 fn find_qr(one: &Point, two: &Point, three: &Point, module_size: f64) -> Option<QRLocation> {
     // Try all three combinations of points to see if any of them are a QR
     if let Some(qr) = find_qr_internal(one, two, three, module_size) {
-        return Some(qr);
+        Some(qr)
     } else if let Some(qr) = find_qr_internal(two, one, three, module_size) {
-        return Some(qr);
+        Some(qr)
     } else if let Some(qr) = find_qr_internal(three, one, two, module_size) {
-        return Some(qr);
+        Some(qr)
     } else {
-        return None;
+        None
     }
 }
 
