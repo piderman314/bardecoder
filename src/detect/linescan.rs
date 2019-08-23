@@ -7,8 +7,7 @@ use std::iter::Iterator;
 use crate::util::qr::QRLocation;
 use crate::util::Point;
 
-use image::GrayImage;
-use image::Pixel;
+use image::{GrayImage, Pixel};
 
 #[cfg(feature = "debug-images")]
 use image::{DynamicImage, Rgb};

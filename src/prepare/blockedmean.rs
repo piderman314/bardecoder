@@ -1,7 +1,6 @@
 use super::Prepare;
 
-use image::Pixel;
-use image::{DynamicImage, GrayImage};
+use image::{DynamicImage, GrayImage, Pixel};
 
 use std::cmp::{max, min};
 
