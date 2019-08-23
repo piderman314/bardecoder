@@ -141,7 +141,7 @@ impl Detect<GrayImage> for LineScan {
                             continue;
                         }
 
-                        img.put_pixel(x, y, Rgb { data: [255, 0, 0] });
+                        img.put_pixel(x, y, Rgb([255, 0, 0]));
                     }
                 }
             }
