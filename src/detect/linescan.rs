@@ -1,6 +1,6 @@
 use super::{Detect, Location};
 
-use std::cmp::{max, min};
+use std::cmp::min;
 use std::iter::repeat;
 use std::iter::Iterator;
 
@@ -57,7 +57,10 @@ impl Detect<GrayImage> for LineScan {
             // A pixel of the same color, add to the count in the last position
             if p.data[0] == last_pixel {
                 pattern.6 += 1;
-                continue 'pixels;
+
+                if x != prepared.dimensions().0 - 1 {
+                    continue 'pixels;
+                }
             }
 
             // A pixel color switch, but the current pattern does not look like a finder
@@ -126,9 +129,9 @@ impl Detect<GrayImage> for LineScan {
 
             for c in candidates.iter() {
                 let loc = c.location;
-                let x_start = max(0, (loc.x - 3.5 * c.module_size) as u32);
+                let x_start = (loc.x - 3.5 * c.module_size).max(0.0_f64) as u32;
                 let x_end = min(img.dimensions().0, (loc.x + 3.5 * c.module_size) as u32);
-                let y_start = max(0, (loc.y - 3.5 * c.module_size) as u32);
+                let y_start = (loc.y - 3.5 * c.module_size).max(0.0_f64) as u32;
                 let y_end = min(img.dimensions().0, (loc.y + 3.5 * c.module_size) as u32);
 
                 for x in x_start..x_end {
@@ -210,7 +213,7 @@ impl LineScan {
         module_size: f64,
     ) -> Option<QRFinderPosition> {
         // Bound x range to image dimensions
-        let start_x = max(0, (finder.x - 5.0 * module_size).round() as u32);
+        let start_x = (finder.x - 5.0 * module_size).max(0.0_f64).round() as u32;
         let end_x = min(
             (finder.x + 5.0 * module_size).round() as u32,
             prepared.dimensions().0,
@@ -231,7 +234,7 @@ impl LineScan {
         module_size: f64,
     ) -> Option<QRFinderPosition> {
         // Bound y range to image dimensions
-        let start_y = max(0, (finder.y - 5.0 * module_size).round() as u32);
+        let start_y = (finder.y - 5.0 * module_size).max(0.0_f64).round() as u32;
         let end_y = min(
             (finder.y + 5.0 * module_size).round() as u32,
             prepared.dimensions().1,
