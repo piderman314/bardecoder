@@ -170,6 +170,12 @@ fn determine_perspective(
         }
     }
 
+    if !found {
+        return Err(QRError {
+            msg: String::from("Unable to find alignment pattern"),
+        });
+    }
+
     let al_x = est_alignment.x.round() as u32;
     let al_y = est_alignment.y.round() as u32;
     let mut left_x = 0;
@@ -212,12 +218,6 @@ fn determine_perspective(
 
     debug!("TOP Y {} BOTTOM Y {}", top_y, bottom_y);
     est_alignment.y = (f64::from(top_y) + f64::from(bottom_y)) / 2.0;
-
-    if !found {
-        return Err(QRError {
-            msg: String::from("Unable to find alignment pattern"),
-        });
-    }
 
     #[cfg(feature = "debug-images")]
     {
@@ -273,6 +273,10 @@ fn determine_perspective(
 }
 
 fn is_alignment(prepared: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f64) -> bool {
+    if p.x < 0.0 || p.y < 0.0 {
+        return false;
+    }
+
     let dx = scale * dx;
     let dy = scale * dy;
 
