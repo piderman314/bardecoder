@@ -36,10 +36,10 @@ impl Detect<GrayImage> for LineScan {
     fn detect(&self, prepared: &GrayImage) -> Vec<Location> {
         // The order of refinement is important.
         // The candidate is found in horizontal direction, so the first refinement is vertical
-        let refine_func: Vec<(Box<Refine>, f64, f64)> = vec![
-            (Box::new(LineScan::refine_vertical), 0.0, 1.0),
-            (Box::new(LineScan::refine_horizontal), 1.0, 0.0),
-            (Box::new(LineScan::refine_diagonal), 1.0, 1.0),
+        let refine_func: Vec<(Box<Refine>, f64, f64, bool)> = vec![
+            (Box::new(LineScan::refine_vertical), 0.0, 1.0, false),
+            (Box::new(LineScan::refine_horizontal), 1.0, 0.0, false),
+            (Box::new(LineScan::refine_diagonal), 1.0, 1.0, true),
         ];
 
         let mut candidates: Vec<QRFinderPosition> = vec![];
@@ -91,7 +91,7 @@ impl Detect<GrayImage> for LineScan {
 
             // Step 2
             // Run the refinement functions on the candidate location
-            for (refine_func, dx, dy) in &refine_func {
+            for (refine_func, dx, dy, is_diagonal) in &refine_func {
                 let vert = refine_func(&self, prepared, &finder, module_size);
 
                 if vert.is_none() {
@@ -101,12 +101,15 @@ impl Detect<GrayImage> for LineScan {
                     continue 'pixels;
                 }
 
-                // Adjust the candidate location with the refined candidate and module size
-                let vert = vert.unwrap();
-                let half_finder = 3.5 * vert.last_module_size;
-                finder.x = vert.location.x - dx * half_finder;
-                finder.y = vert.location.y - dy * half_finder;
-                module_size = vert.module_size;
+                if !is_diagonal {
+                    // Adjust the candidate location with the refined candidate and module size,
+                    // exchept when refining the diagonal because that is unreliable on lower resolutions
+                    let vert = vert.unwrap();
+                    let half_finder = 3.5 * vert.last_module_size;
+                    finder.x = vert.location.x - dx * half_finder;
+                    finder.y = vert.location.y - dy * half_finder;
+                    module_size = vert.module_size;
+                }
             }
 
             candidates.push(QRFinderPosition {
@@ -223,7 +226,7 @@ impl LineScan {
         let range_x = start_x..end_x;
         let range_y = repeat(finder.y.round() as u32);
 
-        self.refine(prepared, module_size, range_x, range_y)
+        self.refine(prepared, module_size, range_x, range_y, false)
     }
 
     // Refine vertically
@@ -244,7 +247,7 @@ impl LineScan {
         let range_x = repeat(finder.x.round() as u32);
         let range_y = start_y..end_y;
 
-        self.refine(prepared, module_size, range_x, range_y)
+        self.refine(prepared, module_size, range_x, range_y, false)
     }
 
     // Refine diagonally
@@ -287,7 +290,7 @@ impl LineScan {
                 prepared.dimensions().1,
             );
 
-        self.refine(prepared, module_size, range_x, range_y)
+        self.refine(prepared, module_size, range_x, range_y, true)
     }
 
     fn refine(
@@ -296,6 +299,7 @@ impl LineScan {
         module_size: f64,
         range_x: impl Iterator<Item = u32>,
         range_y: impl Iterator<Item = u32>,
+        is_diagonal: bool,
     ) -> Option<QRFinderPosition> {
         let mut last_pixel = 127;
         let mut pattern = QRFinderPattern::new();
@@ -309,8 +313,11 @@ impl LineScan {
                 pattern.6 += 1;
             } else {
                 // The current pattern needs to look like a finder (1-1-3-1-1)
-                // Also the module size needs to be similar to the candidate we are refining
-                if pattern.looks_like_finder() && diff(module_size, pattern.est_mod_size()) < 0.2 {
+                // Also the module size needs to be similar to the candidate we are refining,
+                // except when checking the diagonal because that is unreliable on lower resolutions
+                if pattern.looks_like_finder()
+                    && (diff(module_size, pattern.est_mod_size()) < 0.2 || is_diagonal)
+                {
                     let new_est_mod_size = (module_size + pattern.est_mod_size()) / 2.0;
                     return Some(QRFinderPosition {
                         location: Point {
@@ -331,8 +338,11 @@ impl LineScan {
         }
 
         // The current pattern needs to look like a finder (1-1-3-1-1)
-        // Also the module size needs to be similar to the candidate we are refining
-        if pattern.looks_like_finder() && diff(module_size, pattern.est_mod_size()) < 0.2 {
+        // Also the module size needs to be similar to the candidate we are refining,
+        // except when checking the diagonal because that is unreliable on lower resolutions
+        if pattern.looks_like_finder()
+            && (diff(module_size, pattern.est_mod_size()) < 0.2 || is_diagonal)
+        {
             let new_est_mod_size = (module_size + pattern.est_mod_size()) / 2.0;
             return Some(QRFinderPosition {
                 location: Point {
