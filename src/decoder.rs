@@ -24,7 +24,7 @@ impl<IMG, PREPD> Decoder<IMG, PREPD> {
     /// * prepare
     /// * detect
     /// * per detected code the associated extract and decode functions
-    pub fn decode(&self, source: IMG) -> Vec<Result<String, Error>> {
+    pub fn decode(&self, source: &IMG) -> Vec<Result<String, Error>> {
         let prepared = self.prepare.prepare(source);
         let locations = self.detect.detect(&prepared);
 

@@ -22,7 +22,7 @@ pub use self::blockedmean::BlockedMean;
 /// struct MyPreparator {}
 ///
 /// impl Prepare<DynamicImage, GrayImage> for MyPreparator {
-///     fn prepare(&self, input: DynamicImage) -> GrayImage {
+///     fn prepare(&self, input: &DynamicImage) -> GrayImage {
 ///         // prepare image here
 /// #       input.to_luma()
 ///     }
@@ -36,5 +36,5 @@ pub use self::blockedmean::BlockedMean;
 /// [`here`]: ../prepare/trait.Prepare.html
 pub trait Prepare<IMG, PREPD> {
     /// Does the actual preparing
-    fn prepare(&self, source: IMG) -> PREPD;
+    fn prepare(&self, source: &IMG) -> PREPD;
 }

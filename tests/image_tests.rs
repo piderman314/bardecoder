@@ -118,7 +118,7 @@ pub fn test_image(file: &str, expected: Vec<Result<String, Error>>) {
     let img = image::open(file).unwrap();
 
     let decoder = bardecoder::default_decoder();
-    let result = decoder.decode(img);
+    let result = decoder.decode(&img);
 
     assert_eq!(expected.len(), result.len());
 

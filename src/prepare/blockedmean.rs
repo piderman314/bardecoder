@@ -32,7 +32,7 @@ impl BlockedMean {
 }
 
 impl Prepare<DynamicImage, GrayImage> for BlockedMean {
-    fn prepare(&self, input: DynamicImage) -> GrayImage {
+    fn prepare(&self, input: &DynamicImage) -> GrayImage {
         let grayscale = input.to_luma();
 
         let dimensions = grayscale.dimensions();
