@@ -44,7 +44,7 @@ fn main() {
     // Use default decoder
     let decoder = bardecoder::default_decoder();
 
-    let results = decoder.decode(img);
+    let results = decoder.decode(&img);
     for result in results {
         println!("{}", result.unwrap());
     }
@@ -72,7 +72,7 @@ fn main() {
     // Build the actual decoder
     let decoder = db.build();
 
-    let results = decoder.decode(img);
+    let results = decoder.decode(&img);
     for result in results {
         println!("{}", result.unwrap());
     }
@@ -127,7 +127,7 @@ fn main() {
     // Build the actual decoder
     let decoder = db.build();
 
-    let results = decoder.decode(img);
+    let results = decoder.decode(&img);
     for result in results {
         println!("{}", result.unwrap());
     }
