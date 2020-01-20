@@ -16,7 +16,7 @@ Detect and decode QR Codes, written in 100% Rust.
 [![License](https://img.shields.io/github/license/piderman314/bardecoder.svg?color=success)](https://github.com/piderman314/bardecoder/blob/master/LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/bardecoder.svg)](https://crates.io/crates/bardecoder)
 [![docs.rs](https://docs.rs/bardecoder/badge.svg)](https://docs.rs/bardecoder)
-[![Rustc version](https://img.shields.io/badge/rustc-1.34%2B-informational.svg)](https://www.rust-lang.org/)
+[![Rustc version](https://img.shields.io/badge/rustc-1.40%2B-informational.svg)](https://www.rust-lang.org/)
 
 ## Background
 
