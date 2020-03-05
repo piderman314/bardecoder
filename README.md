@@ -28,16 +28,14 @@ Add the following to your `Cargo.toml`:
 
 ``` toml
 [dependencies]
-bardecoder = "0.1"
+bardecoder = "0.2.1"
+image = "0.22"
 ```
 
 ### Quick
 The quickest way to integrate is to use the built-in default decoder. This will work for the vast majority of cases, though please keep in mind the [Tips](#tips) below.
 
 ``` rust
-use bardecoder;
-use image;
-
 fn main() {
     let img = image::open("<<image location>>").unwrap();
 
