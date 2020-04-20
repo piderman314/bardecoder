@@ -72,20 +72,13 @@ fn syndrome(block: &[u8], base: GF8) -> GF8 {
 }
 
 fn find_locs(block_info: &BlockInfo, syndromes: &[GF8]) -> Result<Vec<usize>, QRError> {
-    let mut sigma: Option<Vec<GF8>> = None;
-
-    for z in (1..=block_info.ec_cap as usize).rev() {
-        let mut eq = vec![vec![GF8(0); z + 1]; z];
-        for i in 0..z {
-            eq[i][..=z].clone_from_slice(&syndromes[i..(z + 1 + i)]);
-        }
-
-        sigma = solve(eq, GF8(0), GF8(1), true);
-
-        if sigma.is_some() {
-            break;
-        }
+    let z = block_info.ec_cap as usize;
+    let mut eq = vec![vec![GF8(0); z + 1]; z];
+    for i in 0..z {
+        eq[i][..=z].clone_from_slice(&syndromes[i..(z + 1 + i)]);
     }
+
+    let sigma = solve(eq, GF8(0), GF8(1), false);
 
     let sigma = sigma.ok_or(QRError {
         msg: String::from("Could not calculate SIGMA"),
@@ -103,6 +96,7 @@ fn find_locs(block_info: &BlockInfo, syndromes: &[GF8]) -> Result<Vec<usize>, QR
         check_value = check_value + x;
 
         if check_value == GF8(0) {
+            debug!("LOC {:?} {} ", exp, i);
             locs.push(i);
         }
     }
