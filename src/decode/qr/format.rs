@@ -188,7 +188,7 @@ mod test {
     #[test]
     pub fn test_corrupt() {
         let input_orig = CORRECT.to_vec();
-        let mut input_corrupt = input_orig.clone();
+        let mut input_corrupt = input_orig;
         input_corrupt[4] ^= 1;
         input_corrupt[5] ^= 1;
         input_corrupt[6] ^= 1;
