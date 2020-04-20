@@ -147,15 +147,37 @@ fn eight_bit(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
         },
     )?;
 
-    let mut result = String::new();
+    let mut result = vec![];
 
     for _ in 0..length {
-        result.push(read_bits(chomp, 8)? as char);
+        result.push(read_bits(chomp, 8)?);
     }
 
-    debug!("EIGHT BIT {:?}", result);
+    debug!("EIGHT BIT RAW {:?}", result);
 
-    Ok(result)
+    let mut may_be_utf8 = false;
+
+    for r in &result {
+        if *r == 0xC3 {
+            may_be_utf8 = true;
+            break;
+        }
+    }
+
+    let final_result = if may_be_utf8 {
+        let utf8 = String::from_utf8(result)?;
+        debug!("EIGHT BIT AS UTF-8 {:?}", utf8);
+        utf8
+    } else {
+        let mut iso88591 = String::new();
+        for r in result {
+            iso88591.push(r as char);
+        }
+        debug!("EIGHT BIT AS ISO 8859-1 {:?}", iso88591);
+        iso88591
+    };
+
+    Ok(final_result)
 }
 
 fn read_bits(chomp: &mut Chomp, bits: u8) -> Result<u8, QRError> {
