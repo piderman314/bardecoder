@@ -2,6 +2,8 @@
 
 use std::ops::Index;
 
+use std::string::FromUtf8Error;
+
 use crate::util::Point;
 
 /// Generic QR Error message. Can be converted into `failure::Error`
@@ -10,6 +12,17 @@ use crate::util::Point;
 pub struct QRError {
     /// Detail message
     pub msg: String,
+}
+
+impl From<FromUtf8Error> for QRError {
+    fn from(error: FromUtf8Error) -> Self {
+        QRError {
+            msg: format!(
+                "Unable to convert result to UTF-8, raw bytes: {:?}",
+                error.into_bytes()
+            ),
+        }
+    }
 }
 
 /// QR Data extracted from the source image
