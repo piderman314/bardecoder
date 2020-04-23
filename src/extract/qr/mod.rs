@@ -5,11 +5,8 @@ use crate::util::{Delta, Point};
 
 use image::GrayImage;
 
-// We need to allow unused imports for the width() and height() calls later on, which are part of
-// GenericImageView.
 #[cfg(feature = "debug-images")]
-#[allow(unused_imports)]
-use image::{DynamicImage, Rgb, GenericImageView};
+use image::{DynamicImage, Rgb};
 
 #[cfg(feature = "debug-images")]
 use std::{
