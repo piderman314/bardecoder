@@ -15,7 +15,7 @@ Detect and decode QR Codes
 """
 
 [dependencies]
-image = "0.22"
+image = ">= 0.22, <= 0.23"
 log = "0.4"
 failure = "0.1"
 failure_derive = "0.1"
