@@ -190,14 +190,56 @@ impl Detect<GrayImage> for LineScan {
                     if diff2 > 0.1 {
                         continue;
                     }
-
-                    if let Some(qr) = find_qr(
-                        &candidates[candidate1].location,
-                        &candidates[candidate2].location,
-                        &candidates[candidate3].location,
-                        candidates[candidate1].module_size,
-                    ) {
-                        locations.push(Location::QR(qr));
+                    
+                    // Skip sets which are not mostly square.
+                    // Two of the distances should be mostly equal, while the other should mostly be sqrt(2) of the others.
+                    let tolerance = 0.1;
+                    let inv_sqrt2 = 1.0 / (2.0 as f64).sqrt();
+                    let vec_1_2 = Point { x: candidates[candidate2].location.x - candidates[candidate1].location.x, y: candidates[candidate2].location.y - candidates[candidate1].location.y };
+                    let vec_2_3 = Point { x: candidates[candidate3].location.x - candidates[candidate2].location.x, y: candidates[candidate3].location.y - candidates[candidate2].location.y };
+                    let vec_3_1 = Point { x: candidates[candidate1].location.x - candidates[candidate3].location.x, y: candidates[candidate1].location.y - candidates[candidate3].location.y };
+                    let dist_1_2 = (vec_1_2.x * vec_1_2.x + vec_1_2.y * vec_1_2.y).sqrt();
+                    let dist_2_3 = (vec_2_3.x * vec_2_3.x + vec_2_3.y * vec_2_3.y).sqrt();
+                    let dist_3_1 = (vec_3_1.x * vec_3_1.x + vec_3_1.y * vec_3_1.y).sqrt();
+                    let ratio_1_2_2_3 = dist_1_2 / dist_2_3;
+                    let ratio_2_3_3_1 = dist_2_3 / dist_3_1;
+                    let ratio_3_1_1_2 = dist_3_1 / dist_1_2;
+                    debug!("Ratios of {} {} {}: {}, {}, {}", candidate1, candidate2, candidate3, ratio_1_2_2_3, ratio_2_3_3_1, ratio_3_1_1_2);
+                    if (1.0 - ratio_1_2_2_3).abs() < tolerance && (inv_sqrt2 - ratio_2_3_3_1).abs() < tolerance {
+                        // We know that 1-2 and 2-3 are perpendicular, and find_qr_internal checks for mirroring, so we only need to try one combination.
+                        debug!("Checking candidate {}, {}, {}", candidate1, candidate2, candidate3);
+                        if let Some(qr) = find_qr_internal(
+                            &candidates[candidate2].location,
+                            &candidates[candidate1].location,
+                            &candidates[candidate3].location,
+                            candidates[candidate1].module_size,
+                        ) {
+                            locations.push(Location::QR(qr));
+                        }
+                    }
+                    else if (1.0 - ratio_2_3_3_1).abs() < tolerance && (inv_sqrt2 - ratio_3_1_1_2).abs() < tolerance {
+                        // We know that 2-3 and 3-1 are perpendicular, and find_qr_internal checks for mirroring, so we only need to try one combination.
+                        debug!("Checking candidate {}, {}, {}", candidate1, candidate2, candidate3);
+                        if let Some(qr) = find_qr_internal(
+                            &candidates[candidate3].location,
+                            &candidates[candidate1].location,
+                            &candidates[candidate2].location,
+                            candidates[candidate1].module_size,
+                        ) {
+                            locations.push(Location::QR(qr));
+                        }
+                    }
+                    else if (1.0 - ratio_3_1_1_2).abs() < tolerance && (inv_sqrt2 - ratio_1_2_2_3).abs() < tolerance {
+                        // We know that 3-1 and 1-2 are perpendicular, and find_qr_internal checks for mirroring, so we only need to try one combination.
+                        debug!("Checking candidate {}, {}, {}", candidate1, candidate2, candidate3);
+                        if let Some(qr) = find_qr_internal(
+                            &candidates[candidate1].location,
+                            &candidates[candidate2].location,
+                            &candidates[candidate3].location,
+                            candidates[candidate1].module_size,
+                        ) {
+                            locations.push(Location::QR(qr));
+                        }
                     }
                 }
             }
@@ -445,7 +487,7 @@ fn dist(one: &Point, other: &Point) -> f64 {
     dist.sqrt()
 }
 
-#[inline]
+/*#[inline]
 fn find_qr(one: &Point, two: &Point, three: &Point, module_size: f64) -> Option<QRLocation> {
     // Try all three combinations of points to see if any of them are a QR
     if let Some(qr) = find_qr_internal(one, two, three, module_size) {
@@ -457,7 +499,7 @@ fn find_qr(one: &Point, two: &Point, three: &Point, module_size: f64) -> Option<
     } else {
         None
     }
-}
+}*/
 
 fn find_qr_internal(
     one: &Point,
