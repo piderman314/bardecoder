@@ -81,6 +81,17 @@ pub fn test_needs_alignment() {
 }
 
 #[test]
+pub fn test_multiple_codes() {
+    test_image(
+        "tests/images/multiple_codes.png",
+        vec![
+            Ok(String::from("http://www.prolinepetfood.com/1/")),
+            Ok(String::from("Ver1"))
+        ],
+    );
+}
+
+#[test]
 pub fn test_wikipedia_examples() {
     // Downloaded from https://en.wikipedia.org/wiki/QR_code
     test_image(
