@@ -3,6 +3,7 @@ use super::{Detect, Location};
 use std::cmp::min;
 use std::iter::repeat;
 use std::iter::Iterator;
+use std::sync::{Arc, Mutex};
 
 use crate::util::qr::QRLocation;
 use crate::util::Point;
@@ -30,10 +31,15 @@ impl LineScan {
     }
 }
 
-type Refine = dyn Fn(&LineScan, &GrayImage, &Point, f64) -> Option<QRFinderPosition>;
+type Refine = dyn Fn(&GrayImage, &Point, f64) -> Option<QRFinderPosition>;
 
-impl Detect<GrayImage> for LineScan {
-    fn detect(&self, prepared: &GrayImage) -> Vec<Location> {
+struct LineProcessingClosure<'a> {
+    prepared: &'a GrayImage,
+    y: u32,
+}
+
+impl<'a> LineProcessingClosure<'a> {
+    fn process(&self, data: Arc<Mutex<Vec<QRFinderPosition>>>) {
         // The order of refinement is important.
         // The candidate is found in horizontal direction, so the first refinement is vertical
         let refine_func: Vec<(Box<Refine>, f64, f64, bool)> = vec![
@@ -42,19 +48,13 @@ impl Detect<GrayImage> for LineScan {
             (Box::new(LineScan::refine_diagonal), 1.0, 1.0, true),
         ];
 
-        let mut candidates: Vec<QRFinderPosition> = vec![];
-
+        let prepared = self.prepared;
+        let mut candidates = data.lock().unwrap();
         let mut last_pixel = 127;
         let mut pattern = QRFinderPattern::new();
-        'pixels: for (x, y, p) in prepared.enumerate_pixels() {
-            // Step 1
-            // A new line, construct a new QRFinderPattern
-            if x == 0 {
-                last_pixel = 127;
-                pattern = QRFinderPattern::new();
-            }
-
+        'pixels: for x in 0..prepared.width() {
             // A pixel of the same color, add to the count in the last position
+            let p = prepared.get_pixel(x, self.y);
             if p.channels()[0] == last_pixel {
                 pattern.6 += 1;
 
@@ -76,10 +76,10 @@ impl Detect<GrayImage> for LineScan {
             // A finder pattern is 1-1-3-1-1 modules wide, so subtract 3.5 modules to get the x coordinate in the center
             let mut finder = Point {
                 x: f64::from(x) - module_size * 3.5,
-                y: f64::from(y),
+                y: f64::from(self.y),
             };
 
-            for candidate in &candidates {
+            for candidate in candidates.iter() {
                 if dist(&finder, &candidate.location) < 7.0 * module_size {
                     // The candidate location we have found was already detected and stored on a previous line.
                     last_pixel = p.channels()[0];
@@ -92,7 +92,7 @@ impl Detect<GrayImage> for LineScan {
             // Step 2
             // Run the refinement functions on the candidate location
             for (refine_func, dx, dy, is_diagonal) in &refine_func {
-                let vert = refine_func(&self, prepared, &finder, module_size);
+                let vert = refine_func(prepared, &finder, module_size);
 
                 if vert.is_none() {
                     last_pixel = p.channels()[0];
@@ -121,7 +121,42 @@ impl Detect<GrayImage> for LineScan {
             last_pixel = p.channels()[0];
             pattern.slide();
         }
+    }
+}
 
+impl Detect<GrayImage> for LineScan {
+    fn detect(&self, prepared: &GrayImage) -> Vec<Location> {
+        let candidates_thread_safe = Arc::new(Mutex::<Vec<QRFinderPosition>>::new(vec![]));
+
+        // Start a new scope so the threads complete at the end.
+        {
+            #[cfg(feature = "multithreaded")]
+            let num_threads = 4;
+            #[cfg(feature = "multithreaded")]
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(num_threads)
+                .build()
+                .unwrap();
+
+            // Loop over each row.
+            for y in 0..prepared.height() {
+                let candidates_reference = Arc::clone(&candidates_thread_safe);
+                let process_line = LineProcessingClosure { prepared, y };
+                #[cfg(feature = "multithreaded")]
+                {
+                    pool.install(move || {
+                        process_line.process(candidates_reference);
+                    });
+                }
+                #[cfg(not(feature = "multithreaded"))]
+                {
+                    process_line.process(candidates_reference);
+                }
+            }
+        }
+
+        let data = Arc::clone(&candidates_thread_safe);
+        let candidates = data.lock().unwrap();
         debug!("Candidate QR Locators {:#?}", candidates);
 
         // Output a debug image by drawing red squares around all candidate locations
@@ -210,7 +245,6 @@ impl Detect<GrayImage> for LineScan {
 impl LineScan {
     // Refine horizontally
     fn refine_horizontal(
-        &self,
         prepared: &GrayImage,
         finder: &Point,
         module_size: f64,
@@ -226,12 +260,11 @@ impl LineScan {
         let range_x = start_x..end_x;
         let range_y = repeat(finder.y.round() as u32);
 
-        self.refine(prepared, module_size, range_x, range_y, false)
+        Self::refine(prepared, module_size, range_x, range_y, false)
     }
 
     // Refine vertically
     fn refine_vertical(
-        &self,
         prepared: &GrayImage,
         finder: &Point,
         module_size: f64,
@@ -247,12 +280,11 @@ impl LineScan {
         let range_x = repeat(finder.x.round() as u32);
         let range_y = start_y..end_y;
 
-        self.refine(prepared, module_size, range_x, range_y, false)
+        Self::refine(prepared, module_size, range_x, range_y, false)
     }
 
     // Refine diagonally
     fn refine_diagonal(
-        &self,
         prepared: &GrayImage,
         finder: &Point,
         module_size: f64,
@@ -290,11 +322,10 @@ impl LineScan {
                 prepared.dimensions().1,
             );
 
-        self.refine(prepared, module_size, range_x, range_y, true)
+        Self::refine(prepared, module_size, range_x, range_y, true)
     }
 
     fn refine(
-        &self,
         prepared: &GrayImage,
         module_size: f64,
         range_x: impl Iterator<Item = u32>,
