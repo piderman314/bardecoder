@@ -5,8 +5,11 @@ use crate::util::{Delta, Point};
 
 use image::GrayImage;
 
+// We need to allow unused imports for the width() and height() calls later on, which are part of
+// GenericImageView.
 #[cfg(feature = "debug-images")]
-use image::{DynamicImage, Rgb};
+#[allow(unused_imports)]
+use image::{DynamicImage, Rgb, GenericImageView};
 
 #[cfg(feature = "debug-images")]
 use std::{
@@ -81,9 +84,13 @@ impl Extract<GrayImage, QRLocation, QRData, QRError> for QRExtractor {
         {
             let mut tmp = temp_dir();
             tmp.push("bardecoder-debug-images");
+            tmp.push("extract");
 
             if let Ok(_) = create_dir_all(tmp.clone()) {
-                tmp.push("extract.png");
+                tmp.push(format!(
+                    "extract_start_{}_{}_dx_{}_{}_dy_{}_{}.png",
+                    start.x, start.y, dx.dx, dx.dy, dy.dx, dy.dy
+                ));
 
                 if let Ok(_) = DynamicImage::ImageRgb8(img).save(tmp.clone()) {
                     debug!("Debug image with data pixels saved to {:?}", tmp);
@@ -287,7 +294,11 @@ fn is_alignment(prepared: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f64
         for i in -2..3 {
             for j in -2..3 {
                 let pp = p + f64::from(i) * dx + f64::from(j) * dy;
-                img.put_pixel(pp.x.round() as u32, pp.y.round() as u32, Rgb([255, 0, 0]));
+		let x = pp.x.round() as u32;
+		let y = pp.y.round() as u32;
+		if x < img.width() && y < img.height() {
+	                img.put_pixel(x, y, Rgb([255, 0, 0]));
+		}
             }
         }
 
