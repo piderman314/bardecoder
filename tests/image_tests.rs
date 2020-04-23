@@ -1,7 +1,3 @@
-use bardecoder;
-
-use image;
-
 use failure::Error;
 
 #[test]
@@ -86,7 +82,7 @@ pub fn test_multiple_codes() {
         "tests/images/multiple_codes.png",
         vec![
             Ok(String::from("http://www.prolinepetfood.com/1/")),
-            Ok(String::from("Ver1"))
+            Ok(String::from("Ver1")),
         ],
     );
 }
