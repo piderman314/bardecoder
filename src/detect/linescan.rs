@@ -367,11 +367,14 @@ impl QRFinderPattern {
     }
 
     fn slide(&mut self) {
-        if f64::from(self.6) < f64::from(self.5) / 10.0 {
+        if f64::from(self.6) < f64::from(self.5) / 10.0 && self.4 != 0 {
             // we slid last time because the pixels inverted,
             // but it turned out that it was only for a few pixels
             // likely it was just some noise in the image
             // so revert the previous slide call and add the noise to the previous pattern
+            //
+            // Only ignore this as noise if this isn't the first shift, since we might just have a
+            // large quiet zone (self.4 == 0).
             self.6 += self.5;
             self.5 = self.4;
             self.4 = self.3;
