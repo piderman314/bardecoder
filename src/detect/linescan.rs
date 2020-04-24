@@ -35,7 +35,8 @@ type Refine = dyn Fn(&GrayImage, &Point, f64) -> Option<QRFinderPosition>;
 
 struct LineProcessingClosure<'a> {
     prepared: &'a GrayImage,
-    y: u32,
+    start_y: u32,
+    end_y: u32,
 }
 
 impl<'a> LineProcessingClosure<'a> {
@@ -49,77 +50,86 @@ impl<'a> LineProcessingClosure<'a> {
         ];
 
         let prepared = self.prepared;
-        let mut candidates = data.lock().unwrap();
-        let mut last_pixel = 127;
-        let mut pattern = QRFinderPattern::new();
-        'pixels: for x in 0..prepared.width() {
-            // A pixel of the same color, add to the count in the last position
-            let p = prepared.get_pixel(x, self.y);
-            if p.channels()[0] == last_pixel {
-                pattern.6 += 1;
+        for y in self.start_y..=self.end_y {
+            let mut last_pixel = 127;
+            let mut pattern = QRFinderPattern::new();
+            'pixels: for x in 0..prepared.width() {
+                // A pixel of the same color, add to the count in the last position
+                let p = prepared.get_pixel(x, y);
+                if p.channels()[0] == last_pixel {
+                    pattern.6 += 1;
 
-                if x != prepared.dimensions().0 - 1 {
+                    if x != prepared.dimensions().0 - 1 {
+                        continue 'pixels;
+                    }
+                }
+
+                // A pixel color switch, but the current pattern does not look like a finder
+                // Slide the pattern and continue searching
+                if !pattern.looks_like_finder() {
+                    last_pixel = p.channels()[0];
+                    pattern.slide();
                     continue 'pixels;
                 }
-            }
 
-            // A pixel color switch, but the current pattern does not look like a finder
-            // Slide the pattern and continue searching
-            if !pattern.looks_like_finder() {
+                let mut module_size = pattern.est_mod_size();
+
+                // A finder pattern is 1-1-3-1-1 modules wide, so subtract 3.5 modules to get the x coordinate in the center
+                let mut finder = Point {
+                    x: f64::from(x) - module_size * 3.5,
+                    y: f64::from(y),
+                };
+
+                // Put the mutex lock inside of a block so it's unlocked as soon as we're done with it.
+                {
+                    let candidates = data.lock().unwrap();
+                    for candidate in candidates.iter() {
+                        if dist(&finder, &candidate.location) < 7.0 * module_size {
+                            // The candidate location we have found was already detected and stored on a previous line.
+                            last_pixel = p.channels()[0];
+                            pattern.slide();
+
+                            continue 'pixels;
+                        }
+                    }
+                }
+
+                // Step 2
+                // Run the refinement functions on the candidate location
+                for (refine_func, dx, dy, is_diagonal) in &refine_func {
+                    let vert = refine_func(prepared, &finder, module_size);
+
+                    if vert.is_none() {
+                        last_pixel = p.channels()[0];
+                        pattern.slide();
+
+                        continue 'pixels;
+                    }
+
+                    if !is_diagonal {
+                        // Adjust the candidate location with the refined candidate and module size,
+                        // exchept when refining the diagonal because that is unreliable on lower resolutions
+                        let vert = vert.unwrap();
+                        let half_finder = 3.5 * vert.last_module_size;
+                        finder.x = vert.location.x - dx * half_finder;
+                        finder.y = vert.location.y - dy * half_finder;
+                        module_size = vert.module_size;
+                    }
+                }
+
+                // Put the mutex lock inside of a block so it's unlocked as soon as we're done with it.
+                {
+                    let mut candidates = data.lock().unwrap();
+                    candidates.push(QRFinderPosition {
+                        location: finder,
+                        module_size,
+                        last_module_size: 0.0,
+                    });
+                }
+
                 last_pixel = p.channels()[0];
                 pattern.slide();
-                continue 'pixels;
             }
-
-            let mut module_size = pattern.est_mod_size();
-
-            // A finder pattern is 1-1-3-1-1 modules wide, so subtract 3.5 modules to get the x coordinate in the center
-            let mut finder = Point {
-                x: f64::from(x) - module_size * 3.5,
-                y: f64::from(self.y),
-            };
-
-            for candidate in candidates.iter() {
-                if dist(&finder, &candidate.location) < 7.0 * module_size {
-                    // The candidate location we have found was already detected and stored on a previous line.
-                    last_pixel = p.channels()[0];
-                    pattern.slide();
-
-                    continue 'pixels;
-                }
-            }
-
-            // Step 2
-            // Run the refinement functions on the candidate location
-            for (refine_func, dx, dy, is_diagonal) in &refine_func {
-                let vert = refine_func(prepared, &finder, module_size);
-
-                if vert.is_none() {
-                    last_pixel = p.channels()[0];
-                    pattern.slide();
-
-                    continue 'pixels;
-                }
-
-                if !is_diagonal {
-                    // Adjust the candidate location with the refined candidate and module size,
-                    // exchept when refining the diagonal because that is unreliable on lower resolutions
-                    let vert = vert.unwrap();
-                    let half_finder = 3.5 * vert.last_module_size;
-                    finder.x = vert.location.x - dx * half_finder;
-                    finder.y = vert.location.y - dy * half_finder;
-                    module_size = vert.module_size;
-                }
-            }
-
-            candidates.push(QRFinderPosition {
-                location: finder,
-                module_size,
-                last_module_size: 0.0,
-            });
-
-            last_pixel = p.channels()[0];
-            pattern.slide();
         }
     }
 }
@@ -130,8 +140,8 @@ impl Detect<GrayImage> for LineScan {
 
         // Start a new scope so the threads complete at the end.
         {
-            #[cfg(feature = "multithreaded")]
             let num_threads = 4;
+
             #[cfg(feature = "multithreaded")]
             let pool = rayon::ThreadPoolBuilder::new()
                 .num_threads(num_threads)
@@ -139,9 +149,22 @@ impl Detect<GrayImage> for LineScan {
                 .unwrap();
 
             // Loop over each row.
-            for y in 0..prepared.height() {
+            let rows_per_section = (prepared.height() as f64 / num_threads as f64).ceil() as u32;
+            debug!("Rows per section: {}", rows_per_section);
+            for start_y in (0..prepared.height()).step_by(rows_per_section as usize) {
+                let end_y = min(start_y + rows_per_section, prepared.height() - 1);
                 let candidates_reference = Arc::clone(&candidates_thread_safe);
-                let process_line = LineProcessingClosure { prepared, y };
+                let process_line = LineProcessingClosure {
+                    prepared,
+                    start_y,
+                    end_y,
+                };
+                debug!(
+                    "Processing lines {} through {} (out of {} lines) as one chunk",
+                    start_y,
+                    end_y,
+                    prepared.height()
+                );
                 #[cfg(feature = "multithreaded")]
                 {
                     pool.install(move || {
