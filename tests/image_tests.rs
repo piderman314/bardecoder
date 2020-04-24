@@ -37,6 +37,14 @@ pub fn test_version1_example_upside_down() {
 }
 
 #[test]
+pub fn test_version1_huge() {
+    test_image(
+        "tests/images/version1_huge.png",
+        vec![Ok(String::from("Ver1"))],
+    );
+}
+
+#[test]
 pub fn test_version1_example2() {
     test_image(
         "tests/images/version1_example2.jpg",
@@ -132,7 +140,10 @@ pub fn test_image(file: &str, expected: Vec<Result<String, Error>>) {
 
     for (expected, result) in expected.into_iter().zip(result) {
         assert!(expected.is_ok());
-        assert!(result.is_ok());
+        if let Err(e) = result {
+            panic!("Result was error: {}", e);
+        }
+        //assert!(result.is_ok());
         assert_eq!(expected.unwrap(), result.unwrap());
     }
 }
