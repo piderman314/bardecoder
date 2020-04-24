@@ -140,41 +140,43 @@ impl Detect<GrayImage> for LineScan {
 
         // Start a new scope so the threads complete at the end.
         {
-            let num_threads = 4;
-
-            #[cfg(feature = "multithreaded")]
-            let pool = rayon::ThreadPoolBuilder::new()
-                .num_threads(num_threads)
-                .build()
-                .unwrap();
-
             // Loop over each row.
-            let rows_per_section = (prepared.height() as f64 / num_threads as f64).ceil() as u32;
-            debug!("Rows per section: {}", rows_per_section);
-            for start_y in (0..prepared.height()).step_by(rows_per_section as usize) {
-                let end_y = min(start_y + rows_per_section, prepared.height() - 1);
+            #[cfg(feature = "multithreaded")]
+            {
+                let num_threads = 8;
+                let rows_per_section =
+                    (prepared.height() as f64 / num_threads as f64).ceil() as u32;
+                debug!("Rows per section: {}", rows_per_section);
+                rayon::scope(|s| {
+                    for start_y in (0..prepared.height()).step_by(rows_per_section as usize) {
+                        let end_y = min(start_y + rows_per_section, prepared.height() - 1);
+                        let candidates_reference = Arc::clone(&candidates_thread_safe);
+                        let process_line = LineProcessingClosure {
+                            prepared,
+                            start_y,
+                            end_y,
+                        };
+                        debug!(
+                            "Processing lines {} through {} (out of {} lines) as one chunk",
+                            start_y,
+                            end_y,
+                            prepared.height()
+                        );
+                        s.spawn(move |_| {
+                            process_line.process(candidates_reference);
+                        });
+                    }
+                });
+            }
+            #[cfg(not(feature = "multithreaded"))]
+            {
                 let candidates_reference = Arc::clone(&candidates_thread_safe);
                 let process_line = LineProcessingClosure {
                     prepared,
-                    start_y,
-                    end_y,
+                    start_y: 0,
+                    end_y: prepared.height() - 1,
                 };
-                debug!(
-                    "Processing lines {} through {} (out of {} lines) as one chunk",
-                    start_y,
-                    end_y,
-                    prepared.height()
-                );
-                #[cfg(feature = "multithreaded")]
-                {
-                    pool.install(move || {
-                        process_line.process(candidates_reference);
-                    });
-                }
-                #[cfg(not(feature = "multithreaded"))]
-                {
-                    process_line.process(candidates_reference);
-                }
+                process_line.process(candidates_reference);
             }
         }
 
