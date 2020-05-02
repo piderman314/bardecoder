@@ -9,6 +9,30 @@ pub fn test_version1_example() {
 }
 
 #[test]
+pub fn test_wild_big_example() {
+    test_image(
+        "tests/images/wild_big.png",
+        vec![Ok(String::from("2810050501011O7KV4V6FDGU"))],
+    );
+}
+
+#[test]
+pub fn test_wild_rotated_1() {
+    test_image(
+        "tests/images/wild_rot_1.jpg",
+        vec![Ok(String::from("2810050501011O7KV4V6FDGU"))],
+    );
+}
+
+#[test]
+pub fn test_wild_rotated_2() {
+    test_image(
+        "tests/images/wild_rot_2.jpg",
+        vec![Ok(String::from("2810050501011O7KV4V6FDGU"))],
+    );
+}
+
+#[test]
 pub fn test_version1_example_no_border() {
     test_image(
         "tests/images/version1_example_no_border.png",

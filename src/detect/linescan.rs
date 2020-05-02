@@ -407,7 +407,7 @@ impl QRFinderPattern {
         }
 
         let module_size: f64 = f64::from(total_size) / 7.0;
-        let max_variance = module_size / 1.5;
+        let max_variance = module_size / 1.6;
 
         if (module_size - f64::from(self.2)).abs() > max_variance {
             return false;
