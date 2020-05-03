@@ -24,7 +24,7 @@ pub use self::qr::decoder::QRDecoder;
 ///
 /// struct MyDecoder {}
 ///
-/// impl Decode<QRData, QRError> for MyDecoder {
+/// impl Decode<QRData, String, QRError> for MyDecoder {
 ///     fn decode(&self, data: Result<QRData, QRError>) -> Result<String, QRError> {
 ///         // process data here
 /// #        Ok(String::from("ok!"))
@@ -38,10 +38,10 @@ pub use self::qr::decoder::QRDecoder;
 /// [`here`]: ../extract/trait.Extract.html
 /// [`Decoder`]: ../struct.Decoder.html
 
-pub trait Decode<DATA, ERROR>
+pub trait Decode<DATA, RESULT, ERROR>
 where
     ERROR: Fail,
 {
     /// Does the actual decoding
-    fn decode(&self, data: Result<DATA, ERROR>) -> Result<String, ERROR>;
+    fn decode(&self, data: Result<DATA, ERROR>) -> Result<RESULT, ERROR>;
 }

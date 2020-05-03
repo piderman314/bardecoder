@@ -11,20 +11,20 @@ use crate::prepare::{BlockedMean, Prepare};
 use crate::util::qr::{QRData, QRError, QRLocation};
 
 /// Struct to hold logic to do the entire decoding
-pub struct Decoder<IMG, PREPD> {
+pub struct Decoder<IMG, PREPD, RESULT> {
     prepare: Box<dyn Prepare<IMG, PREPD>>,
     detect: Box<dyn Detect<PREPD>>,
-    qr: ExtractDecode<PREPD, QRLocation, QRData, QRError>,
+    qr: ExtractDecode<PREPD, QRLocation, QRData, RESULT, QRError>,
 }
 
-impl<IMG, PREPD> Decoder<IMG, PREPD> {
+impl<IMG, PREPD, RESULT> Decoder<IMG, PREPD, RESULT> {
     /// Do the actual decoding
     ///
     /// Logic is run in the following order:
     /// * prepare
     /// * detect
     /// * per detected code the associated extract and decode functions
-    pub fn decode(&self, source: &IMG) -> Vec<Result<String, Error>> {
+    pub fn decode(&self, source: &IMG) -> Vec<Result<RESULT, Error>> {
         let prepared = self.prepare.prepare(source);
         let locations = self.detect.detect(&prepared);
 
@@ -59,7 +59,7 @@ impl<IMG, PREPD> Decoder<IMG, PREPD> {
 /// * decode: QRDecoder
 ///
 /// This is meant to provide a good balance between speed and accuracy
-pub fn default_decoder() -> Decoder<DynamicImage, GrayImage> {
+pub fn default_decoder() -> Decoder<DynamicImage, GrayImage, String> {
     default_builder().build()
 }
 
@@ -71,15 +71,15 @@ pub fn default_decoder() -> Decoder<DynamicImage, GrayImage> {
 /// * Detect
 /// * Extract
 /// * Decode
-pub struct DecoderBuilder<IMG, PREPD> {
+pub struct DecoderBuilder<IMG, PREPD, RESULT> {
     prepare: Option<Box<dyn Prepare<IMG, PREPD>>>,
     detect: Option<Box<dyn Detect<PREPD>>>,
-    qr: Option<ExtractDecode<PREPD, QRLocation, QRData, QRError>>,
+    qr: Option<ExtractDecode<PREPD, QRLocation, QRData, RESULT, QRError>>,
 }
 
-impl<IMG, PREPD> DecoderBuilder<IMG, PREPD> {
+impl<IMG, PREPD, RESULT> DecoderBuilder<IMG, PREPD, RESULT> {
     /// Constructor; all fields initialized as None
-    pub fn new() -> DecoderBuilder<IMG, PREPD> {
+    pub fn new() -> DecoderBuilder<IMG, PREPD, RESULT> {
         DecoderBuilder {
             prepare: None,
             detect: None,
@@ -91,13 +91,16 @@ impl<IMG, PREPD> DecoderBuilder<IMG, PREPD> {
     pub fn prepare(
         &mut self,
         prepare: Box<dyn Prepare<IMG, PREPD>>,
-    ) -> &mut DecoderBuilder<IMG, PREPD> {
+    ) -> &mut DecoderBuilder<IMG, PREPD, RESULT> {
         self.prepare = Some(prepare);
         self
     }
 
     /// Set the detect implementation for this Decoder
-    pub fn detect(&mut self, detect: Box<dyn Detect<PREPD>>) -> &mut DecoderBuilder<IMG, PREPD> {
+    pub fn detect(
+        &mut self,
+        detect: Box<dyn Detect<PREPD>>,
+    ) -> &mut DecoderBuilder<IMG, PREPD, RESULT> {
         self.detect = Some(detect);
         self
     }
@@ -106,8 +109,8 @@ impl<IMG, PREPD> DecoderBuilder<IMG, PREPD> {
     pub fn qr(
         &mut self,
         extract: Box<dyn Extract<PREPD, QRLocation, QRData, QRError>>,
-        decode: Box<dyn Decode<QRData, QRError>>,
-    ) -> &mut DecoderBuilder<IMG, PREPD> {
+        decode: Box<dyn Decode<QRData, RESULT, QRError>>,
+    ) -> &mut DecoderBuilder<IMG, PREPD, RESULT> {
         self.qr = Some(ExtractDecode { extract, decode });
         self
     }
@@ -117,7 +120,7 @@ impl<IMG, PREPD> DecoderBuilder<IMG, PREPD> {
     /// # Panics
     ///
     /// Will panic if any of the required components are missing
-    pub fn build(self) -> Decoder<IMG, PREPD> {
+    pub fn build(self) -> Decoder<IMG, PREPD, RESULT> {
         if self.prepare.is_none() {
             panic!("Cannot build Decoder without Prepare component");
         }
@@ -144,7 +147,7 @@ impl<IMG, PREPD> DecoderBuilder<IMG, PREPD> {
 /// * decode: QRDecoder
 ///
 /// The builder can then be customised before creating the Decoder
-pub fn default_builder() -> DecoderBuilder<DynamicImage, GrayImage> {
+pub fn default_builder() -> DecoderBuilder<DynamicImage, GrayImage, String> {
     let mut db = DecoderBuilder::new();
 
     db.prepare(Box::new(BlockedMean::new(5, 7)));
@@ -154,7 +157,7 @@ pub fn default_builder() -> DecoderBuilder<DynamicImage, GrayImage> {
     db
 }
 
-struct ExtractDecode<PREPD, LOC, DATA, ERROR> {
+struct ExtractDecode<PREPD, LOC, DATA, RESULT, ERROR> {
     extract: Box<dyn Extract<PREPD, LOC, DATA, ERROR>>,
-    decode: Box<dyn Decode<DATA, ERROR>>,
+    decode: Box<dyn Decode<DATA, RESULT, ERROR>>,
 }

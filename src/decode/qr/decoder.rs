@@ -23,7 +23,7 @@ impl QRDecoder {
     }
 }
 
-impl Decode<QRData, QRError> for QRDecoder {
+impl Decode<QRData, String, QRError> for QRDecoder {
     fn decode(&self, data: Result<QRData, QRError>) -> Result<String, QRError> {
         let qr_data = data?;
 
