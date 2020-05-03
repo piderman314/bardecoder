@@ -4,7 +4,7 @@ use failure::Fail;
 
 mod qr;
 
-pub use self::qr::decoder::QRDecoder;
+pub use self::qr::decoder::{QRDecoder, QRDecoderWithInfo};
 
 /// Decode extracted data into a resulting String
 ///

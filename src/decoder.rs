@@ -3,12 +3,12 @@ use image::GrayImage;
 
 use failure::Error;
 
-use crate::decode::{Decode, QRDecoder};
+use crate::decode::{Decode, QRDecoder, QRDecoderWithInfo};
 use crate::detect::{Detect, LineScan, Location};
 use crate::extract::{Extract, QRExtractor};
 use crate::prepare::{BlockedMean, Prepare};
 
-use crate::util::qr::{QRData, QRError, QRLocation};
+use crate::util::qr::{QRData, QRError, QRInfo, QRLocation};
 
 /// Struct to hold logic to do the entire decoding
 pub struct Decoder<IMG, PREPD, RESULT> {
@@ -61,6 +61,20 @@ impl<IMG, PREPD, RESULT> Decoder<IMG, PREPD, RESULT> {
 /// This is meant to provide a good balance between speed and accuracy
 pub fn default_decoder() -> Decoder<DynamicImage, GrayImage, String> {
     default_builder().build()
+}
+
+/// Create a default Decoder that also returns information about the decoded QR Code
+///
+/// It will use the following components:
+///
+/// * prepare: BlockedMean
+/// * detect: LineScan
+/// * extract: QRExtractor
+/// * decode: QRDecoderWithInfo
+///
+/// This is meant to provide a good balance between speed and accuracy
+pub fn default_decoder_with_info() -> Decoder<DynamicImage, GrayImage, (String, QRInfo)> {
+    default_builder_with_info().build()
 }
 
 /// Builder struct to create a Decoder
@@ -153,6 +167,29 @@ pub fn default_builder() -> DecoderBuilder<DynamicImage, GrayImage, String> {
     db.prepare(Box::new(BlockedMean::new(5, 7)));
     db.detect(Box::new(LineScan::new()));
     db.qr(Box::new(QRExtractor::new()), Box::new(QRDecoder::new()));
+
+    db
+}
+
+/// Create a default DecoderBuilder that also returns information about the decoded QR Code
+///
+/// It will use the following components:
+///
+/// * prepare: BlockedMean
+/// * locate: LineScan
+/// * extract: QRExtractor
+/// * decode: QRDecoderWithInfo
+///
+/// The builder can then be customised before creating the Decoder
+pub fn default_builder_with_info() -> DecoderBuilder<DynamicImage, GrayImage, (String, QRInfo)> {
+    let mut db = DecoderBuilder::new();
+
+    db.prepare(Box::new(BlockedMean::new(5, 7)));
+    db.detect(Box::new(LineScan::new()));
+    db.qr(
+        Box::new(QRExtractor::new()),
+        Box::new(QRDecoderWithInfo::new()),
+    );
 
     db
 }

@@ -97,3 +97,26 @@ pub struct QRLocation {
     /// Version of the QR Code, 1 being the smallest, 40 the largest
     pub version: u32,
 }
+
+/// Information about the decoded QR Code
+#[derive(Debug, PartialEq)]
+pub struct QRInfo {
+    /// Version of the QR Code, 1 being the smallest, 40 the largest
+    pub version: u32,
+
+    /// Error correction level of the QR Code
+    pub ec_level: ECLevel,
+
+    /// Number of bits of information that were incorrect. This can be both in data codewords or error correction codewords since the algorithm doesn't distinguish between the two.
+    pub errors: u32,
+}
+
+/// Error Correction level of the QR Code
+#[derive(Debug, PartialEq)]
+#[allow(missing_docs)]
+pub enum ECLevel {
+    LOW,
+    MEDIUM,
+    QUARTILE,
+    HIGH,
+}

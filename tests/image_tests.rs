@@ -1,10 +1,27 @@
 use failure::Error;
 
+use bardecoder::{ECLevel, QRInfo};
+
 #[test]
 pub fn test_version1_example() {
     test_image(
         "tests/images/version1_example.jpg",
         vec![Ok(String::from("01234567"))],
+    );
+}
+
+#[test]
+pub fn test_version1_example_with_info() {
+    test_image_with_info(
+        "tests/images/version1_example.jpg",
+        vec![Ok((
+            String::from("01234567"),
+            QRInfo {
+                version: 1,
+                ec_level: ECLevel::MEDIUM,
+                errors: 0,
+            },
+        ))],
     );
 }
 
@@ -77,12 +94,52 @@ pub fn test_needs_alignment() {
 }
 
 #[test]
+pub fn test_needs_alignment_with_info() {
+    test_image_with_info(
+        "tests/images/needs_alignment.jpg",
+        vec![Ok((
+            String::from("http://cblink.je/app-install-display-nl"),
+            QRInfo {
+                version: 3,
+                ec_level: ECLevel::LOW,
+                errors: 3,
+            },
+        ))],
+    );
+}
+
+#[test]
 pub fn test_multiple_codes() {
     test_image(
         "tests/images/multiple_codes.png",
         vec![
             Ok(String::from("http://www.prolinepetfood.com/1/")),
             Ok(String::from("Ver1")),
+        ],
+    );
+}
+
+#[test]
+pub fn test_multiple_codes_with_info() {
+    test_image_with_info(
+        "tests/images/multiple_codes.png",
+        vec![
+            Ok((
+                String::from("http://www.prolinepetfood.com/1/"),
+                QRInfo {
+                    version: 3,
+                    ec_level: ECLevel::MEDIUM,
+                    errors: 0,
+                },
+            )),
+            Ok((
+                String::from("Ver1"),
+                QRInfo {
+                    version: 1,
+                    ec_level: ECLevel::HIGH,
+                    errors: 0,
+                },
+            )),
         ],
     );
 }
@@ -133,6 +190,21 @@ pub fn test_image(file: &str, expected: Vec<Result<String, Error>>) {
     let img = image::open(file).unwrap();
 
     let decoder = bardecoder::default_decoder();
+    let result = decoder.decode(&img);
+
+    assert_eq!(expected.len(), result.len());
+
+    for (expected, result) in expected.into_iter().zip(result) {
+        assert!(expected.is_ok());
+        assert!(result.is_ok());
+        assert_eq!(expected.unwrap(), result.unwrap());
+    }
+}
+
+pub fn test_image_with_info(file: &str, expected: Vec<Result<(String, QRInfo), Error>>) {
+    let img = image::open(file).unwrap();
+
+    let decoder = bardecoder::default_decoder_with_info();
     let result = decoder.decode(&img);
 
     assert_eq!(expected.len(), result.len());

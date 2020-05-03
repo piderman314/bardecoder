@@ -5,7 +5,53 @@ use crate::util::qr::QRError;
 
 use std::ops::{Div, Mul, Sub};
 
-pub fn correct(mut block: Vec<u8>, block_info: &BlockInfo) -> Result<Vec<u8>, QRError> {
+pub fn correct(block: Vec<u8>, block_info: &BlockInfo) -> Result<Vec<u8>, QRError> {
+    correct_with_error_count(block, block_info).map(|r| r.0)
+}
+
+pub fn correct_with_error_count(
+    mut block: Vec<u8>,
+    block_info: &BlockInfo,
+) -> Result<(Vec<u8>, u32), QRError> {
+    let (all_fine, syndromes) = calculate_syndromes(&block, block_info);
+
+    if all_fine {
+        // all fine, nothing to do
+        debug!("ALL SYNDROMES WERE ZERO, NO CORRECTION NEEDED");
+        return Ok((block, 0));
+    }
+
+    let locs = find_locs(block_info, &syndromes)?;
+
+    let distance = calculate_distances(&syndromes, &locs);
+    let distance = distance.ok_or(QRError {
+        msg: String::from("Could not calculate error distances"),
+    })?;
+
+    let mut error_count = 0;
+
+    for i in 0..locs.len() {
+        debug!(
+            "FIXING LOCATION {} FROM {:08b} TO {:08b}",
+            block_info.total_per as usize - 1 - locs[i] as usize,
+            block[block_info.total_per as usize - 1 - locs[i] as usize],
+            block[block_info.total_per as usize - 1 - locs[i] as usize] ^ distance[i].0
+        );
+
+        error_count += distance[i].0.count_ones();
+        block[block_info.total_per as usize - 1 - locs[i] as usize] ^= distance[i].0;
+    }
+
+    if syndrome(&block, EXP8[0]) != GF8(0) {
+        return Err(QRError {
+            msg: String::from("Error correcting did not fix corrupted data"),
+        });
+    }
+
+    Ok((block, error_count))
+}
+
+fn calculate_syndromes(block: &[u8], block_info: &BlockInfo) -> (bool, Vec<GF8>) {
     let mut syndromes = vec![GF8(0); (block_info.ec_cap * 2) as usize];
 
     let mut all_fine = true;
@@ -16,46 +62,7 @@ pub fn correct(mut block: Vec<u8>, block_info: &BlockInfo) -> Result<Vec<u8>, QR
         }
     }
 
-    if all_fine {
-        // all fine, nothing to do
-        debug!("ALL SYNDROMES WERE ZERO, NO CORRECTION NEEDED");
-        return Ok(block);
-    }
-
-    let locs = find_locs(block_info, &syndromes)?;
-
-    let mut eq = vec![vec![GF8(0); locs.len() + 1]; locs.len()];
-    for i in 0..locs.len() {
-        for j in 0..locs.len() {
-            eq[i][j] = EXP8[(i * locs[j] as usize) % 255];
-        }
-
-        eq[i][locs.len()] = syndromes[i];
-    }
-
-    let distance = solve(eq, GF8(0), GF8(1), false);
-
-    let distance = distance.ok_or(QRError {
-        msg: String::from("Could not calculate error distances"),
-    })?;
-
-    for i in 0..locs.len() {
-        debug!(
-            "FIXING LOCATION {} FROM {:08b} TO {:08b}",
-            block_info.total_per as usize - 1 - locs[i] as usize,
-            block[block_info.total_per as usize - 1 - locs[i] as usize],
-            block[block_info.total_per as usize - 1 - locs[i] as usize] ^ distance[i].0
-        );
-        block[block_info.total_per as usize - 1 - locs[i] as usize] ^= distance[i].0;
-    }
-
-    if syndrome(&block, EXP8[0]) != GF8(0) {
-        return Err(QRError {
-            msg: String::from("Error correcting did not fix corrupted data"),
-        });
-    }
-
-    Ok(block)
+    (all_fine, syndromes)
 }
 
 fn syndrome(block: &[u8], base: GF8) -> GF8 {
@@ -104,6 +111,19 @@ fn find_locs(block_info: &BlockInfo, syndromes: &[GF8]) -> Result<Vec<usize>, QR
     debug!("LOCS {:?}", locs);
 
     Ok(locs)
+}
+
+fn calculate_distances(syndromes: &[GF8], locs: &[usize]) -> Option<Vec<GF8>> {
+    let mut eq = vec![vec![GF8(0); locs.len() + 1]; locs.len()];
+    for i in 0..locs.len() {
+        for j in 0..locs.len() {
+            eq[i][j] = EXP8[(i * locs[j] as usize) % 255];
+        }
+
+        eq[i][locs.len()] = syndromes[i];
+    }
+
+    solve(eq, GF8(0), GF8(1), false)
 }
 
 fn solve<T>(mut eq: Vec<Vec<T>>, zero: T, one: T, fail_on_rank: bool) -> Option<Vec<T>>

@@ -23,5 +23,8 @@ pub mod extract;
 pub mod prepare;
 pub mod util;
 
-pub use crate::decoder::{default_builder, default_decoder};
+pub use crate::decoder::{
+    default_builder, default_builder_with_info, default_decoder, default_decoder_with_info,
+};
 pub use crate::decoder::{Decoder, DecoderBuilder};
+pub use crate::util::qr::{ECLevel, QRInfo};

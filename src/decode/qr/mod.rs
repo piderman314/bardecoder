@@ -1,4 +1,4 @@
-use crate::util::qr::{QRData, QRError};
+use crate::util::qr::{ECLevel, QRData, QRError};
 
 pub mod blocks;
 pub mod correct;
@@ -6,14 +6,6 @@ pub mod data;
 pub mod decoder;
 pub mod format;
 pub mod galois;
-
-#[derive(Debug)]
-pub enum ECLevel {
-    LOW,
-    MEDIUM,
-    QUARTILE,
-    HIGH,
-}
 
 pub type QRMask = dyn Fn(&QRData, u32, u32) -> u8;
 
