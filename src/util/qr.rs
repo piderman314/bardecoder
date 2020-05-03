@@ -107,6 +107,9 @@ pub struct QRInfo {
     /// Error correction level of the QR Code
     pub ec_level: ECLevel,
 
+    /// Number of bits of information in the QR Code. This includes both data codewords and error correction codewords.
+    pub total_data: u32,
+
     /// Number of bits of information that were incorrect. This can be both in data codewords or error correction codewords since the algorithm doesn't distinguish between the two.
     pub errors: u32,
 }

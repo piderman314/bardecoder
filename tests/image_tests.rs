@@ -19,6 +19,7 @@ pub fn test_version1_example_with_info() {
             QRInfo {
                 version: 1,
                 ec_level: ECLevel::MEDIUM,
+                total_data: 128,
                 errors: 0,
             },
         ))],
@@ -102,6 +103,7 @@ pub fn test_needs_alignment_with_info() {
             QRInfo {
                 version: 3,
                 ec_level: ECLevel::LOW,
+                total_data: 440,
                 errors: 3,
             },
         ))],
@@ -129,6 +131,7 @@ pub fn test_multiple_codes_with_info() {
                 QRInfo {
                     version: 3,
                     ec_level: ECLevel::MEDIUM,
+                    total_data: 352,
                     errors: 0,
                 },
             )),
@@ -137,6 +140,7 @@ pub fn test_multiple_codes_with_info() {
                 QRInfo {
                     version: 1,
                     ec_level: ECLevel::HIGH,
+                    total_data: 72,
                     errors: 0,
                 },
             )),
