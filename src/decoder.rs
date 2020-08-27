@@ -40,7 +40,7 @@ impl<IMG, PREPD, RESULT> Decoder<IMG, PREPD, RESULT> {
                     let extracted = self.qr.extract.extract(&prepared, qrloc);
                     let decoded = self.qr.decode.decode(extracted);
 
-                    all_decoded.push(decoded.or_else(|err| Err(Error::from(err))));
+                    all_decoded.push(decoded.map_err(Error::from));
                 }
             }
         }
