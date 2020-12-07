@@ -30,10 +30,80 @@ impl LineScan {
     }
 }
 
-type Refine = dyn Fn(&LineScan, &GrayImage, &Point, f64) -> Option<QRFinderPosition>;
+type Refine = dyn Fn(&GrayImage, &Point, f64) -> Option<QRFinderPosition>;
 
-impl Detect<GrayImage> for LineScan {
-    fn detect(&self, prepared: &GrayImage) -> Vec<Location> {
+struct Candidate {
+    p: Point,
+    module_size: f64,
+}
+
+/*impl std::fmt::Display for Candidate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {}, {})", self.p.x, self.p.y, self.module_size)
+    }
+}*/
+
+impl std::fmt::Debug for Candidate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {}, {})", self.p.x, self.p.y, self.module_size)
+    }
+}
+
+struct LineProcessingClosure<'a> {
+    prepared: &'a GrayImage,
+    start_y: u32,
+    end_y: u32,
+}
+
+impl<'a> LineProcessingClosure<'a> {
+    fn process(&self) -> Vec<Candidate> {
+        let mut points_out = vec![];
+
+        let prepared = self.prepared;
+        for y in self.start_y..=self.end_y {
+            let mut last_pixel = 127;
+            let mut pattern = QRFinderPattern::new();
+            'pixels: for x in 0..prepared.width() {
+                // A pixel of the same color, add to the count in the last position
+                let p = prepared.get_pixel(x, y);
+                if p.channels()[0] == last_pixel {
+                    pattern.6 += 1;
+
+                    if x != prepared.dimensions().0 - 1 {
+                        continue 'pixels;
+                    }
+                }
+
+                if pattern.looks_like_finder() {
+                    let module_size = pattern.est_mod_size();
+
+                    // A finder pattern is 1-1-3-1-1 modules wide, so subtract 3.5 modules to get the x coordinate in the center
+                    points_out.push(Candidate {
+                        p: Point {
+                            x: f64::from(x) - module_size * 3.5,
+                            y: f64::from(y),
+                        },
+                        module_size,
+                    });
+                }
+                // A pixel color switch, but the current pattern does not look like a finder
+                // Slide the pattern and continue searching
+                last_pixel = p.channels()[0];
+                pattern.slide();
+            }
+        }
+
+        // Return the candidates we've found.
+        points_out
+    }
+}
+
+struct CandidateRefiningClosure<'a> {
+    prepared: &'a GrayImage,
+}
+
+impl<'a> CandidateRefiningClosure<'a> {
+    fn process(&self, unfiltered: &[Candidate]) -> Vec<QRFinderPosition> {
         // The order of refinement is important.
         // The candidate is found in horizontal direction, so the first refinement is vertical
         let refine_func: Vec<(Box<Refine>, f64, f64, bool)> = vec![
@@ -42,63 +112,19 @@ impl Detect<GrayImage> for LineScan {
             (Box::new(LineScan::refine_diagonal), 1.0, 1.0, true),
         ];
 
-        let mut candidates: Vec<QRFinderPosition> = vec![];
+        let prepared = self.prepared;
+        let mut filtered = vec![];
 
-        let mut last_pixel = 127;
-        let mut pattern = QRFinderPattern::new();
-        'pixels: for (x, y, p) in prepared.enumerate_pixels() {
-            // Step 1
-            // A new line, construct a new QRFinderPattern
-            if x == 0 {
-                last_pixel = 127;
-                pattern = QRFinderPattern::new();
-            }
-
-            // A pixel of the same color, add to the count in the last position
-            if p.channels()[0] == last_pixel {
-                pattern.6 += 1;
-
-                if x != prepared.dimensions().0 - 1 {
-                    continue 'pixels;
-                }
-            }
-
-            // A pixel color switch, but the current pattern does not look like a finder
-            // Slide the pattern and continue searching
-            if !pattern.looks_like_finder() {
-                last_pixel = p.channels()[0];
-                pattern.slide();
-                continue 'pixels;
-            }
-
-            let mut module_size = pattern.est_mod_size();
-
-            // A finder pattern is 1-1-3-1-1 modules wide, so subtract 3.5 modules to get the x coordinate in the center
-            let mut finder = Point {
-                x: f64::from(x) - module_size * 3.5,
-                y: f64::from(y),
-            };
-
-            for candidate in &candidates {
-                if dist(&finder, &candidate.location) < 7.0 * module_size {
-                    // The candidate location we have found was already detected and stored on a previous line.
-                    last_pixel = p.channels()[0];
-                    pattern.slide();
-
-                    continue 'pixels;
-                }
-            }
-
+        'filter: for u in unfiltered {
             // Step 2
             // Run the refinement functions on the candidate location
+            let mut finder = u.p;
+            let mut module_size = u.module_size;
             for (refine_func, dx, dy, is_diagonal) in &refine_func {
-                let vert = refine_func(&self, prepared, &finder, module_size);
+                let vert = refine_func(prepared, &finder, module_size);
 
                 if vert.is_none() {
-                    last_pixel = p.channels()[0];
-                    pattern.slide();
-
-                    continue 'pixels;
+                    continue 'filter;
                 }
 
                 if !is_diagonal {
@@ -112,18 +138,180 @@ impl Detect<GrayImage> for LineScan {
                 }
             }
 
-            candidates.push(QRFinderPosition {
+            filtered.push(QRFinderPosition {
                 location: finder,
                 module_size,
                 last_module_size: 0.0,
             });
-
-            last_pixel = p.channels()[0];
-            pattern.slide();
         }
 
-        debug!("Candidate QR Locators {:#?}", candidates);
+        filtered
+    }
+}
 
+impl Detect<GrayImage> for LineScan {
+    fn detect(&self, prepared: &GrayImage) -> Vec<Location> {
+        let mut candidates_unfiltered: Vec<Candidate> = vec![];
+
+        #[cfg(feature = "multithreaded")]
+        let num_threads = 16;
+
+        // Loop over each row.
+        #[cfg(feature = "multithreaded")]
+        {
+            crossbeam::scope(|scope| {
+                let rows_per_section =
+                    (prepared.height() as f64 / num_threads as f64).ceil() as u32;
+                debug!("Rows per section: {}", rows_per_section);
+                let mut thread_handles = vec![];
+
+                for start_y in (0..prepared.height()).step_by(rows_per_section as usize) {
+                    let end_y = min(start_y + rows_per_section, prepared.height() - 1);
+                    let process_line = LineProcessingClosure {
+                        prepared,
+                        start_y,
+                        end_y,
+                    };
+                    debug!(
+                        "Processing lines {} through {} (out of {} lines) as one chunk",
+                        start_y,
+                        end_y,
+                        prepared.height()
+                    );
+                    thread_handles.push(scope.spawn(move |_| process_line.process()));
+                }
+
+                // Join the threads back together.
+                for h in thread_handles {
+                    candidates_unfiltered.extend(h.join().unwrap());
+                }
+            })
+            .unwrap();
+        }
+        #[cfg(not(feature = "multithreaded"))]
+        {
+            let process_line = LineProcessingClosure {
+                prepared,
+                start_y: 0,
+                end_y: prepared.height() - 1,
+            };
+            candidates_unfiltered.extend(process_line.process());
+        }
+
+        /*println!(
+            "Candidate QR Locators unfiltered {:#?}",
+            candidates_unfiltered
+        );*/
+
+        // Filter similar points in a single thread so we get them in the correct order.
+        if candidates_unfiltered.len() > 1 {
+            // Looping backwards because it's more likely we'll find matches quicker.
+            let mut x = candidates_unfiltered.len() - 2;
+            loop {
+                // Looping backwards so can remove from the end of the vector and continue without invalidating our range.
+                for y in (x + 1..candidates_unfiltered.len()).rev() {
+                    // Only remove "duplicates" if the module size is similar.
+                    if (candidates_unfiltered[x].module_size - candidates_unfiltered[y].module_size)
+                        .abs()
+                        >= 0.1
+                    {
+                        continue;
+                    }
+                    // Skip the square roots.
+                    // Permit some similarities until we get to the refinement stage.
+                    let dist_limit = 3.5 * candidates_unfiltered[y].module_size;
+                    let dist_limit_sqr = dist_limit * dist_limit;
+                    let candidate_dist_sqr =
+                        dist_sqr(&candidates_unfiltered[y].p, &candidates_unfiltered[x].p);
+                    if candidate_dist_sqr < dist_limit_sqr {
+                        // The candidate location we have found was already detected and stored on a previous line.
+                        // Remove this one.
+                        /*println!(
+                            "Removing {} ({}, {}) for distance {} and limit {} from ({}, {})",
+                            y,
+                            candidates_unfiltered[y].p.x,
+                            candidates_unfiltered[y].p.y,
+                            candidate_dist_sqr,
+                            dist_limit_sqr,
+                            candidates_unfiltered[x].p.x,
+                            candidates_unfiltered[x].p.y
+                        );*/
+                        candidates_unfiltered.remove(y);
+                    }
+                }
+                if x == 0 {
+                    break;
+                }
+                x -= 1;
+            }
+        }
+        let mut candidates: Vec<QRFinderPosition> = vec![];
+
+        // Loop over each candidate.
+        #[cfg(feature = "multithreaded")]
+        {
+            crossbeam::scope(|scope| {
+                let candidates_per_section =
+                    (candidates_unfiltered.len() as f64 / num_threads as f64).ceil() as u32;
+                let mut thread_handles = vec![];
+
+                for start_index in
+                    (0..candidates_unfiltered.len()).step_by(candidates_per_section as usize)
+                {
+                    let end_index = min(
+                        start_index + candidates_per_section as usize,
+                        candidates_unfiltered.len() - 1,
+                    );
+                    let candidate_slice = &candidates_unfiltered[start_index..=end_index];
+                    let process_candidate = CandidateRefiningClosure { prepared };
+                    debug!(
+                        "Processing candidates {} through {} (out of {} candidates) as one chunk",
+                        start_index,
+                        end_index,
+                        candidates_unfiltered.len()
+                    );
+                    thread_handles
+                        .push(scope.spawn(move |_| process_candidate.process(candidate_slice)));
+                }
+
+                // Join the threads back together.
+                for h in thread_handles {
+                    candidates.extend(h.join().unwrap());
+                }
+            })
+            .unwrap();
+        }
+        #[cfg(not(feature = "multithreaded"))]
+        {
+            let process_candidate = CandidateRefiningClosure { prepared };
+            candidates.extend(process_candidate.process(candidates_unfiltered.as_slice()));
+        }
+
+        // Now that the candidates have been refined, remove duplicates again.
+        if candidates.len() > 1 {
+            // Looping backwards because it's more likely we'll find matches quicker.
+            let mut x = candidates.len() - 2;
+            loop {
+                // Looping backwards so can remove from the end of the vector and continue without invalidating our range.
+                for y in (x + 1..candidates.len()).rev() {
+                    // Skip the square roots.
+                    let dist_limit = 7.0 * candidates[y].module_size;
+                    let dist_limit_sqr = dist_limit * dist_limit;
+                    let candidate_dist_sqr =
+                        dist_sqr(&candidates[y].location, &candidates[x].location);
+                    if candidate_dist_sqr < dist_limit_sqr {
+                        // The candidate location we have found was already detected and stored on a previous line.
+                        // Remove this one.
+                        candidates.remove(y);
+                    }
+                }
+                if x == 0 {
+                    break;
+                }
+                x -= 1;
+            }
+        }
+        debug!("Candidate QR Locators {:#?}", candidates);
         // Output a debug image by drawing red squares around all candidate locations
         #[cfg(feature = "debug-images")]
         {
@@ -143,6 +331,9 @@ impl Detect<GrayImage> for LineScan {
                             continue;
                         }
 
+                        if x >= img.width() || y >= img.height() {
+                            continue;
+                        }
                         img.put_pixel(x, y, Rgb([255, 0, 0]));
                     }
                 }
@@ -210,7 +401,6 @@ impl Detect<GrayImage> for LineScan {
 impl LineScan {
     // Refine horizontally
     fn refine_horizontal(
-        &self,
         prepared: &GrayImage,
         finder: &Point,
         module_size: f64,
@@ -226,12 +416,11 @@ impl LineScan {
         let range_x = start_x..end_x;
         let range_y = repeat(finder.y.round() as u32);
 
-        self.refine(prepared, module_size, range_x, range_y, false)
+        Self::refine(prepared, module_size, range_x, range_y, false)
     }
 
     // Refine vertically
     fn refine_vertical(
-        &self,
         prepared: &GrayImage,
         finder: &Point,
         module_size: f64,
@@ -247,12 +436,11 @@ impl LineScan {
         let range_x = repeat(finder.x.round() as u32);
         let range_y = start_y..end_y;
 
-        self.refine(prepared, module_size, range_x, range_y, false)
+        Self::refine(prepared, module_size, range_x, range_y, false)
     }
 
     // Refine diagonally
     fn refine_diagonal(
-        &self,
         prepared: &GrayImage,
         finder: &Point,
         module_size: f64,
@@ -290,11 +478,10 @@ impl LineScan {
                 prepared.dimensions().1,
             );
 
-        self.refine(prepared, module_size, range_x, range_y, true)
+        Self::refine(prepared, module_size, range_x, range_y, true)
     }
 
     fn refine(
-        &self,
         prepared: &GrayImage,
         module_size: f64,
         range_x: impl Iterator<Item = u32>,
@@ -446,6 +633,11 @@ fn diff(a: f64, b: f64) -> f64 {
 fn dist(one: &Point, other: &Point) -> f64 {
     let dist = ((one.x - other.x) * (one.x - other.x)) + ((one.y - other.y) * (one.y - other.y));
     dist.sqrt()
+}
+
+#[inline]
+fn dist_sqr(one: &Point, other: &Point) -> f64 {
+    ((one.x - other.x) * (one.x - other.x)) + ((one.y - other.y) * (one.y - other.y))
 }
 
 #[inline]

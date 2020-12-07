@@ -20,12 +20,14 @@ log = "0.4"
 failure = "0.1"
 failure_derive = "0.1"
 newtype_derive = "0.1"
+crossbeam = { version = "0.7.3", optional = true }
 
 [features]
 default=[]
 debug-images=[]
 fail-on-warnings=[]
 benchmark=[]
+multithreaded=[ "crossbeam" ]
 
 [badges]
 travis-ci = { repository = "piderman314/bardecoder" }

@@ -10,6 +10,7 @@ before_script:
 script:
   - cargo test --verbose --features "fail-on-warnings"
   - cargo check --features "debug-images"
+  - cargo check --features "multithreaded"
   - cargo clippy
 matrix:
   allow_failures:
