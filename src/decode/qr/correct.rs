@@ -56,7 +56,7 @@ fn calculate_syndromes(block: &[u8], block_info: &BlockInfo) -> (bool, Vec<GF8>)
 
     let mut all_fine = true;
     for i in 0..block_info.ec_cap * 2 {
-        syndromes[i as usize] = syndrome(&block, EXP8[i as usize]);
+        syndromes[i as usize] = syndrome(block, EXP8[i as usize]);
         if syndromes[i as usize] != GF8(0) {
             all_fine = false;
         }

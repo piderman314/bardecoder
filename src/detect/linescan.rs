@@ -92,7 +92,7 @@ impl Detect<GrayImage> for LineScan {
             // Step 2
             // Run the refinement functions on the candidate location
             for (refine_func, dx, dy, is_diagonal) in &refine_func {
-                let vert = refine_func(&self, prepared, &finder, module_size);
+                let vert = refine_func(self, prepared, &finder, module_size);
 
                 if vert.is_none() {
                     last_pixel = p.channels()[0];
@@ -449,6 +449,7 @@ fn dist(one: &Point, other: &Point) -> f64 {
 }
 
 #[inline]
+#[allow(clippy::manual_map)]
 fn find_qr(one: &Point, two: &Point, three: &Point, module_size: f64) -> Option<QRLocation> {
     // Try all three combinations of points to see if any of them are a QR
     if let Some(qr) = find_qr_internal(one, two, three, module_size) {
