@@ -76,7 +76,7 @@ impl Chomp {
     /// If requesting fewer than 8 bits, the result will be in the least significant bits of the u8
     pub fn chomp(&mut self, nr_bits: u8) -> Option<u8> {
         let bit_count = BitCount(nr_bits as usize);
-        if nr_bits < 1 || nr_bits > 8 || bit_count > self.bits_left {
+        if !(1..=8).contains(&nr_bits) || bit_count > self.bits_left {
             return None;
         }
 
