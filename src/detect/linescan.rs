@@ -478,10 +478,11 @@ fn find_qr_internal(
     let len_a = (ax * ax + ay * ay).sqrt();
     let len_b = (bx * bx + by * by).sqrt();
 
+    trace!("LEN A {} LEN B {}", len_a, len_b);
     trace!("DIFF {}", diff(len_a, len_b));
 
     // The distance between the two finders needs to be similar
-    if diff(len_a, len_b) > 0.06 {
+    if diff(len_a, len_b) > 0.15 {
         return None;
     }
 
