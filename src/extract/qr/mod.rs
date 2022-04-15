@@ -355,7 +355,7 @@ fn is_alignment(prepared: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f64
             return false;
         }
 
-        let right = p - dx - f64::from(y) * dy;
+        let right = p - dx + f64::from(y) * dy;
         if prepared.get_pixel(right.x.round() as u32, right.y.round() as u32)[0] == 0 {
             return false;
         }
