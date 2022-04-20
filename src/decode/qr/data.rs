@@ -105,8 +105,17 @@ fn alphanumeric(chomp: &mut Chomp, version: u32) -> Result<String, QRError> {
     while length > 0 {
         if length >= 2 {
             let chars = read_bits_u16(chomp, 11)?;
-            result.push(ALPHANUMERIC[chars as usize / 45]);
-            result.push(ALPHANUMERIC[chars as usize % 45]);
+            let char1 = chars as usize / 45;
+            let char2 = chars as usize % 45;
+
+            if char1 > 44 { // char2 cannot be larger than 44
+                return Err(QRError {
+                    msg: format!("Invalid character in alphanumeric data {}", char1),
+                });
+            }
+
+            result.push(ALPHANUMERIC[char1]);
+            result.push(ALPHANUMERIC[char2]);
 
             length -= 2;
             continue;
