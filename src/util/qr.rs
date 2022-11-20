@@ -1,14 +1,14 @@
 //! Utility structs for decoding QR Codes
 
 use std::ops::Index;
-
 use std::string::FromUtf8Error;
+use thiserror::Error;
 
 use crate::util::Point;
 
 /// Generic QR Error message. Can be converted into `failure::Error`
-#[derive(Fail, Debug, Clone, PartialEq, Eq)]
-#[fail(display = "Error decoding QR Code: {}", msg)]
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+#[error("Error decoding QR Code: {}", msg)]
 pub struct QRError {
     /// Detail message
     pub msg: String,

@@ -1,7 +1,5 @@
 //! Extract data from an image
 
-use failure::Fail;
-
 mod qr;
 
 pub use self::qr::QRExtractor;
@@ -41,10 +39,7 @@ pub use self::qr::QRExtractor;
 /// [`Detect`]: ../detect/trait.Detect.html
 /// [`Prepare`]: ../prepare/trait.Prepare.html
 /// [`here`]: ../decode/trait.Decode.html
-pub trait Extract<PREPD, LOC, DATA, ERROR>
-where
-    ERROR: Fail,
-{
+pub trait Extract<PREPD, LOC, DATA, ERROR> {
     /// Does the actual extracting
     fn extract(&self, prepared: &PREPD, loc: LOC) -> Result<DATA, ERROR>;
 }
