@@ -10,9 +10,6 @@
 extern crate log;
 
 #[macro_use]
-extern crate failure_derive;
-
-#[macro_use]
 extern crate newtype_derive;
 
 mod decoder;

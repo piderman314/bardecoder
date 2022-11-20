@@ -1,7 +1,6 @@
+use anyhow::Error;
 use image::DynamicImage;
 use image::GrayImage;
-
-use failure::Error;
 
 use crate::decode::{Decode, QRDecoder, QRDecoderWithInfo};
 use crate::detect::{Detect, LineScan, Location};
