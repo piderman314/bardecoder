@@ -153,7 +153,7 @@ type Mask = dyn Fn(u32, u32) -> bool;
 
 fn qrmask(mask: Box<Mask>) -> Option<Box<QRMask>> {
     Some(Box::new(move |q: &QRData, i: u32, j: u32| {
-        q[[i, j]] ^ (if mask(i, j) { 1 } else { 0 })
+        q[[i, j]] ^ u8::from(mask(i, j))
     }))
 }
 

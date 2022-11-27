@@ -456,10 +456,8 @@ fn find_qr(one: &Point, two: &Point, three: &Point, module_size: f64) -> Option<
         Some(qr)
     } else if let Some(qr) = find_qr_internal(two, one, three, module_size) {
         Some(qr)
-    } else if let Some(qr) = find_qr_internal(three, one, two, module_size) {
-        Some(qr)
     } else {
-        None
+        find_qr_internal(three, one, two, module_size)
     }
 }
 

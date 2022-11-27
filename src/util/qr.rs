@@ -7,7 +7,7 @@ use std::string::FromUtf8Error;
 use crate::util::Point;
 
 /// Generic QR Error message. Can be converted into `failure::Error`
-#[derive(Fail, Debug, Clone, PartialEq)]
+#[derive(Fail, Debug, Clone, PartialEq, Eq)]
 #[fail(display = "Error decoding QR Code: {}", msg)]
 pub struct QRError {
     /// Detail message
@@ -99,7 +99,7 @@ pub struct QRLocation {
 }
 
 /// Information about the decoded QR Code
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct QRInfo {
     /// Version of the QR Code, 1 being the smallest, 40 the largest
     pub version: u32,
@@ -115,7 +115,7 @@ pub struct QRInfo {
 }
 
 /// Error Correction level of the QR Code
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
 pub enum ECLevel {
     LOW,
