@@ -45,7 +45,7 @@ impl Extract<GrayImage, QRLocation, QRData, QRError> for QRExtractor {
         let mut data = vec![];
 
         #[cfg(feature = "debug-images")]
-        let mut img = DynamicImage::ImageLuma8(prepared.clone()).to_rgb();
+        let mut img = DynamicImage::ImageLuma8(prepared.clone()).to_rgb8();
 
         let mut dy = p.dy - 3.0 * p.ddy;
         let mut dx = p.dx - 3.0 * p.ddx;
@@ -225,7 +225,7 @@ fn determine_perspective(
 
     #[cfg(feature = "debug-images")]
     {
-        let mut img = DynamicImage::ImageLuma8(prepared.clone()).to_rgb();
+        let mut img = DynamicImage::ImageLuma8(prepared.clone()).to_rgb8();
 
         let x_start = max(0, (est_alignment.x - 2.5 * loc.module_size) as u32);
         let x_end = min(
@@ -286,7 +286,7 @@ fn is_alignment(prepared: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f64
 
     #[cfg(feature = "debug-images")]
     {
-        let mut img = DynamicImage::ImageLuma8(prepared.clone()).to_rgb();
+        let mut img = DynamicImage::ImageLuma8(prepared.clone()).to_rgb8();
 
         for i in -2..3 {
             for j in -2..3 {

@@ -128,7 +128,7 @@ impl Detect<GrayImage> for LineScan {
         #[cfg(feature = "debug-images")]
         {
             #[cfg(feature = "debug-images")]
-            let mut img = DynamicImage::ImageLuma8(prepared.clone()).to_rgb();
+            let mut img = DynamicImage::ImageLuma8(prepared.clone()).to_rgb8();
 
             for c in candidates.iter() {
                 let loc = c.location;
