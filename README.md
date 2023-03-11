@@ -28,9 +28,11 @@ Add the following to your `Cargo.toml`:
 
 ``` toml
 [dependencies]
-bardecoder = "0.4.0"
+bardecoder = "0.4.1"
 image = "0.23"
 ```
+
+You can also use `image` version 0.24 but some changes in that library seem to have degraded performance of `bardecoder` every so slightly.
 
 ### Quick
 The quickest way to integrate is to use the built-in default decoder. This will work for the vast majority of cases, though please keep in mind the [Tips](#tips) below.
