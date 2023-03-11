@@ -24,7 +24,7 @@ pub use self::blockedmean::BlockedMean;
 /// impl Prepare<DynamicImage, GrayImage> for MyPreparator {
 ///     fn prepare(&self, input: &DynamicImage) -> GrayImage {
 ///         // prepare image here
-/// #       input.to_luma()
+/// #       input.to_luma8()
 ///     }
 /// }
 /// ```
