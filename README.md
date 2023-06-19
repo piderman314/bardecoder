@@ -28,7 +28,7 @@ Add the following to your `Cargo.toml`:
 
 ``` toml
 [dependencies]
-bardecoder = "0.4.1"
+bardecoder = "0.4.2"
 image = "0.23"
 ```
 
