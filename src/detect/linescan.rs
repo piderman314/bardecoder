@@ -495,23 +495,22 @@ fn find_qr_internal(
     }
 
     // Estimate distance between finders, in module count
-    let mut dist = ((dist(one, three) / module_size) + 7.0) as u32;
+    let estimated_dist = (dist(one, three) / module_size) + 7.0;
 
-    trace!("DIST {}", dist);
+    trace!("ESTIMATED DIST {}", estimated_dist);
+
+    // The actual distance is always a value of 4*n + 1 so we'll try to find the n that matchest most closely
+    let n = ((estimated_dist - 1.0) / 4.0).round() as u32;
+
+    // Now recalculate the best guess of the actual distance based on the above n
+    let dist = 4 * n + 1;
+
+    trace!("ESTIMATED ACTUAL DIST {}", dist);
 
     // QR codes are at least 21 modules wide so discard any that are smaller
     if dist < 20 {
         return None;
     }
-
-    // Since the distance in modules between finders needs to be a multiple of 4 plus one, adjust our estimate if it doesn't conform
-    dist = match dist % 4 {
-        0 => dist + 1,
-        1 => dist,
-        2 => dist - 1,
-        3 => dist - 2,
-        _ => return None,
-    };
 
     // QR might be mirrored, in that case store the finders the other way around
     if perpendicular > 0.0 {
