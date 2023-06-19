@@ -33,6 +33,8 @@ impl QRExtractor {
 
 impl Extract<GrayImage, QRLocation, QRData, QRError> for QRExtractor {
     fn extract(&self, prepared: &GrayImage, loc: QRLocation) -> Result<QRData, QRError> {
+        debug!("LOC {:?}", loc);
+
         let size = 17 + loc.version * 4;
         let p = determine_perspective(prepared, loc.version, size, &loc)?;
 
