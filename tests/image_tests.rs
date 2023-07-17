@@ -1,6 +1,11 @@
 use anyhow::Error;
 
+use image;
+use image::{GenericImageView};
+
 use bardecoder::{ECLevel, QRInfo};
+
+use std::fmt::Debug;
 
 #[test]
 pub fn test_version1_example() {
@@ -194,29 +199,44 @@ pub fn test_wikipedia_examples() {
 pub fn test_image(file: &str, expected: Vec<Result<String, Error>>) {
     let img = image::open(file).unwrap();
 
-    let decoder = bardecoder::default_decoder();
-    let result = decoder.decode(&img);
+    let dynamic_image_decoder = bardecoder::default_decoder();
+    let result = dynamic_image_decoder.decode(&img);
 
-    assert_eq!(expected.len(), result.len());
+    assert_result(&expected, &result);
 
-    for (expected, result) in expected.into_iter().zip(result) {
-        assert!(expected.is_ok());
-        assert!(result.is_ok());
-        assert_eq!(expected.unwrap(), result.unwrap());
-    }
+    let img = image::open(file).unwrap();
+
+    let view_decoder = bardecoder::default_decoder();
+    let view = img.view(0, 0, img.width(), img.height());
+    let result = view_decoder.decode(&view.to_image());
+
+    assert_result(&expected, &result);
 }
+
 
 pub fn test_image_with_info(file: &str, expected: Vec<Result<(String, QRInfo), Error>>) {
     let img = image::open(file).unwrap();
 
-    let decoder = bardecoder::default_decoder_with_info();
-    let result = decoder.decode(&img);
+    let dynamic_image_decoder = bardecoder::default_decoder_with_info();
+    let result = dynamic_image_decoder.decode(&img);
 
+    assert_result(&expected, &result);
+
+    let img = image::open(file).unwrap();
+
+    let view_decoder = bardecoder::default_decoder_with_info();
+    let view = img.view(0, 0, img.width(), img.height());
+    let result = view_decoder.decode(&view.to_image());
+
+    assert_result(&expected, &result);
+}
+
+fn assert_result<V>(expected: &Vec<Result<V, Error>>, result: &Vec<Result<V, Error>>) where V: Eq + Debug {
     assert_eq!(expected.len(), result.len());
 
     for (expected, result) in expected.into_iter().zip(result) {
         assert!(expected.is_ok());
         assert!(result.is_ok());
-        assert_eq!(expected.unwrap(), result.unwrap());
+        assert_eq!(expected.as_ref().unwrap(), result.as_ref().unwrap());
     }
 }

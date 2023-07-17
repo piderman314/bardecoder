@@ -1,6 +1,5 @@
 use anyhow::Error;
-use image::DynamicImage;
-use image::GrayImage;
+use image::{GenericImageView, GrayImage, Rgba};
 
 use crate::decode::{Decode, QRDecoder, QRDecoderWithInfo};
 use crate::detect::{Detect, LineScan, Location};
@@ -58,7 +57,7 @@ impl<IMG, PREPD, RESULT> Decoder<IMG, PREPD, RESULT> {
 /// * decode: QRDecoder
 ///
 /// This is meant to provide a good balance between speed and accuracy
-pub fn default_decoder() -> Decoder<DynamicImage, GrayImage, String> {
+pub fn default_decoder<D>() -> Decoder<D, GrayImage, String> where D: GenericImageView<Pixel = Rgba<u8>> {
     default_builder().build()
 }
 
@@ -72,7 +71,7 @@ pub fn default_decoder() -> Decoder<DynamicImage, GrayImage, String> {
 /// * decode: QRDecoderWithInfo
 ///
 /// This is meant to provide a good balance between speed and accuracy
-pub fn default_decoder_with_info() -> Decoder<DynamicImage, GrayImage, (String, QRInfo)> {
+pub fn default_decoder_with_info<D>() -> Decoder<D, GrayImage, (String, QRInfo)> where D: GenericImageView<Pixel = Rgba<u8>> {
     default_builder_with_info().build()
 }
 
@@ -160,7 +159,7 @@ impl<IMG, PREPD, RESULT> DecoderBuilder<IMG, PREPD, RESULT> {
 /// * decode: QRDecoder
 ///
 /// The builder can then be customised before creating the Decoder
-pub fn default_builder() -> DecoderBuilder<DynamicImage, GrayImage, String> {
+pub fn default_builder<D>() -> DecoderBuilder<D, GrayImage, String> where D: GenericImageView<Pixel = Rgba<u8>> {
     let mut db = DecoderBuilder::new();
 
     db.prepare(Box::new(BlockedMean::new(5, 7)));
@@ -180,7 +179,7 @@ pub fn default_builder() -> DecoderBuilder<DynamicImage, GrayImage, String> {
 /// * decode: QRDecoderWithInfo
 ///
 /// The builder can then be customised before creating the Decoder
-pub fn default_builder_with_info() -> DecoderBuilder<DynamicImage, GrayImage, (String, QRInfo)> {
+pub fn default_builder_with_info<D>() -> DecoderBuilder<D, GrayImage, (String, QRInfo)> where D: GenericImageView<Pixel = Rgba<u8>> {
     let mut db = DecoderBuilder::new();
 
     db.prepare(Box::new(BlockedMean::new(5, 7)));

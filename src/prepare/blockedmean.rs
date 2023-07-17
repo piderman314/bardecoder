@@ -1,6 +1,7 @@
 use super::Prepare;
 
-use image::{DynamicImage, GrayImage, Pixel};
+use image::{GenericImageView, GrayImage, Pixel, Rgba};
+use image::imageops::grayscale;
 
 use std::cmp::{max, min};
 
@@ -31,9 +32,9 @@ impl BlockedMean {
     }
 }
 
-impl Prepare<DynamicImage, GrayImage> for BlockedMean {
-    fn prepare(&self, input: &DynamicImage) -> GrayImage {
-        let grayscale = input.to_luma8();
+impl <D> Prepare<D, GrayImage> for BlockedMean where D: GenericImageView<Pixel = Rgba<u8>> {
+    fn prepare(&self, input: &D) -> GrayImage {
+        let grayscale = grayscale(input);
 
         let dimensions = grayscale.dimensions();
         let width = ImageCoord(dimensions.0);
