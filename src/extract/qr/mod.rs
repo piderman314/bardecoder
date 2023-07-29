@@ -324,7 +324,8 @@ fn is_alignment(prepared: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f64
 
     let bottom_right = p + 2.0 * dx + 2.0 * dy;
     let dims = prepared.dimensions();
-    if bottom_right.x > f64::from(dims.0) || bottom_right.y > f64::from(dims.1) {
+
+    if bottom_right.x.round() >= f64::from(dims.0) || bottom_right.y.round() >= f64::from(dims.1) {
         return false;
     }
 
