@@ -28,8 +28,8 @@ Add the following to your `Cargo.toml`:
 
 ``` toml
 [dependencies]
-bardecoder = "0.4.2"
-image = "0.23"
+bardecoder = "0.5.0"
+image = "0.24"
 ```
 
 You can also use `image` version 0.24 but some changes in that library seem to have degraded performance of `bardecoder` every so slightly.
